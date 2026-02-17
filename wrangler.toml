@@ -1,4 +1,4 @@
-name = "futurely-api"
+name = 'royal-paper-1e4b'
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 workers_dev = true
