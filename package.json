@@ -1,0 +1,16 @@
+{
+  "name": "futurely-api",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker API for Futurely — letter storage and delivery",
+  "main": "src/index.js",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.65.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
