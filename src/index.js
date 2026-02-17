@@ -1,4 +1,3 @@
-
 // ============================================================
 //  Futurely — Cloudflare Worker API
 //  Delivery channels: Email (Resend) · Telegram (Bot API)
