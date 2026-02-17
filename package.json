@@ -1,0 +1,17 @@
+{
+  "name": "futurely-api",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker API for Futurely — letter storage and delivery",
+  "main": "src/index.js",
+  "scripts": {
+    "dev":    "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create":  "wrangler d1 create futurely-db",
+    "db:migrate": "wrangler d1 execute futurely-db --file=schema.sql",
+    "db:migrate:local": "wrangler d1 execute futurely-db --local --file=schema.sql",
+    "db:query": "wrangler d1 execute futurely-db --command"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
