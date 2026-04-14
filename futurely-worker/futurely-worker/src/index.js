@@ -32,20 +32,29 @@ const json = (data, status = 200) =>
 const error = (msg, status = 400) => json({ success: false, error: msg }, status);
 const ok    = (data)              => json({ success: true, ...data });
 
-function corsHeaders(origin, env) {
-  const allowed   = env.CORS_ORIGIN || 'https://futurely.unbeated.com';
-  const isAllowed = origin === allowed || origin?.endsWith('.unbeated.com');
+function getCorsHeaders(request, env) {
+  const origin = request.headers.get('Origin') || '';
+  const allowed = env.CORS_ORIGIN || 'https://futurely.unbeated.com';
+  
+  // Allow the specific origin if it matches the domain or is the default allowed
+  const isAllowed = origin === allowed || 
+                    origin.endsWith('.unbeated.com') || 
+                    origin.includes('localhost') || 
+                    origin.includes('127.0.0.1');
+
   return {
-    'Access-Control-Allow-Origin':  isAllowed ? origin : allowed,
+    'Access-Control-Allow-Origin': isAllowed ? origin : allowed,
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age':       '86400',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin'
   };
 }
 
-function withCors(response, origin, env) {
+function applyCors(response, request, env) {
   const headers = new Headers(response.headers);
-  Object.entries(corsHeaders(origin, env)).forEach(([k, v]) => headers.set(k, v));
+  const cors = getCorsHeaders(request, env);
+  Object.entries(cors).forEach(([k, v]) => headers.set(k, v));
   return new Response(response.body, { status: response.status, headers });
 }
 
@@ -59,7 +68,12 @@ export default {
     const method = request.method;
 
     if (method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders(origin, env) });
+      return new Response(null, { status: 204, headers: getCorsHeaders(request, env) });
+    }
+
+    // Safety Check for DB
+    if (!env.DB) {
+      return applyCors(error("D1 Database 'DB' not found. Check your bindings in Cloudflare.", 500), request, env);
     }
 
     const authHeader = request.headers.get('Authorization') || '';
@@ -102,10 +116,10 @@ export default {
       else response = error('Route not found', 404);
     } catch (e) {
       console.error('[Worker]', e);
-      response = error('Internal server error', 500);
+      response = error('Internal server error: ' + e.message, 500);
     }
 
-    return withCors(response, origin, env);
+    return applyCors(response, request, env);
   },
 
   // Runs daily via Cron Trigger: "0 8 * * *"
