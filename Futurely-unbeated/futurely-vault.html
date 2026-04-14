@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Futurely — Your Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Mono:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --navy-deep:   #09101e;
+      --navy-mid:    #111827;
+      --navy-soft:   #1a2540;
+      --navy-muted:  #2a3a5c;
+      --navy-card:   #0f1c30;
+      --gold-bright: #d4a843;
+      --gold-light:  #e8c97a;
+      --gold-pale:   #f5e4b0;
+      --gold-dim:    #7a5f22;
+      --gold-glow:   rgba(212,168,67,0.12);
+      --warm-white:  #fdf8ee;
+      --warm-cream:  #f5ead6;
+      --warm-tan:    #c4a97a;
+      --status-sealed:    #d4a843;
+      --status-delivered: #6aab6e;
+      --status-draft:     #6b7fa8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--navy-deep);
+      color: var(--warm-white);
+      font-family: 'Playfair Display', Georgia, serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* Cursor */
+    .cursor {
+      position: fixed; width: 8px; height: 8px;
+      background: var(--gold-bright); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+    }
+    .cursor-ring {
+      position: fixed; width: 30px; height: 30px;
+      border: 1px solid rgba(212,168,67,0.45); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: transform 0.15s ease;
+    }
+
+    /* Gold top line */
+    body::after {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright), var(--gold-light), var(--gold-bright), transparent);
+      z-index: 200; opacity: 0.8;
+    }
+
+    /* Grain */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 100; opacity: 0.65;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      padding: 1.4rem 3rem;
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(9,16,30,0.97);
+      border-bottom: 1px solid rgba(212,168,67,0.1);
+      backdrop-filter: blur(12px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 2rem; }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem; font-weight: 400; letter-spacing: 0.12em;
+      color: var(--gold-light); text-decoration: none;
+    }
+    .nav-logo span { font-style: italic; color: var(--gold-bright); }
+    .nav-divider {
+      width: 1px; height: 18px;
+      background: rgba(212,168,67,0.2);
+    }
+    .nav-page {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.28em;
+      color: var(--gold-dim); text-transform: uppercase;
+    }
+    .nav-user {
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .nav-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(212,168,67,0.35);
+      background: linear-gradient(135deg, var(--navy-soft), var(--navy-muted));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem; color: var(--gold-light); letter-spacing: 0.05em;
+    }
+    .nav-username {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.15em;
+      color: var(--warm-tan); text-transform: uppercase;
+    }
+
+    /* ─── LAYOUT ─── */
+    .page-wrap {
+      padding: 6rem 3rem 6rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ─── PAGE HEADER ─── */
+    .page-header {
+      margin-bottom: 3.5rem;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      opacity: 0; animation: fadeUp 0.7s ease 0.2s forwards;
+    }
+    .page-title-block {}
+    .page-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.35em;
+      color: var(--gold-dim); text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    .page-title {
+      font-size: 2.8rem; font-weight: 400; line-height: 1.1;
+      color: var(--warm-white);
+    }
+    .page-title em { font-style: italic; color: var(--gold-light); }
+
+    .btn-compose {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.85rem 1.8rem;
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold-light), var(--gold-bright));
+      background-size: 200%;
+      color: var(--navy-deep);
+      font-family: 'Playfair Display', serif;
+      font-size: 0.9rem; font-weight: 500; font-style: italic;
+      letter-spacing: 0.05em;
+      border: none; cursor: none;
+      box-shadow: 0 4px 20px rgba(212,168,67,0.3);
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+    .btn-compose:hover {
+      background-position: right;
+      box-shadow: 0 6px 30px rgba(212,168,67,0.45);
+      transform: translateY(-2px);
+    }
+    .btn-compose-icon { font-size: 0.8rem; }
+
+    /* ─── STATS ROW ─── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: rgba(212,168,67,0.1);
+      border: 1px solid rgba(212,168,67,0.1);
+      margin-bottom: 3.5rem;
+      opacity: 0; animation: fadeUp 0.7s ease 0.35s forwards;
+    }
+
+    .stat-card {
+      background: var(--navy-card);
+      padding: 1.8rem 1.6rem;
+      position: relative; overflow: hidden;
+      transition: background 0.3s;
+    }
+    .stat-card:hover { background: rgba(17,24,39,0.9); }
+    .stat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .stat-card:hover::before { opacity: 1; }
+
+    .stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.52rem; letter-spacing: 0.3em;
+      color: var(--gold-dim); text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+    .stat-value {
+      font-size: 2.4rem; font-weight: 400; font-style: italic;
+      color: var(--gold-light); line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+    .stat-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.5rem; letter-spacing: 0.15em;
+      color: var(--navy-muted); text-transform: uppercase;
+    }
+    .stat-sub strong { color: var(--warm-tan); font-weight: 400; }
+
+    /* ─── FILTER BAR ─── */
+    .filter-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2rem;
+      opacity: 0; animation: fadeUp 0.7s ease 0.45s forwards;
+    }
+    .filter-tabs { display: flex; gap: 0; }
+    .filter-tab {
+      padding: 0.55rem 1.2rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold-dim);
+      background: transparent;
+      border: 1px solid rgba(212,168,67,0.12);
+      border-right: none;
+      cursor: none;
+      transition: all 0.2s;
+    }
+    .filter-tab:last-child { border-right: 1px solid rgba(212,168,67,0.12); }
+    .filter-tab:hover { color: var(--gold-light); background: rgba(212,168,67,0.04); }
+    .filter-tab.active {
+      color: var(--gold-bright); background: rgba(212,168,67,0.08);
+      border-color: rgba(212,168,67,0.35);
+    }
+    .filter-count {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.52rem; letter-spacing: 0.2em;
+      color: var(--navy-muted); text-transform: uppercase;
+    }
+    .filter-count span { color: var(--gold-dim); }
+
+    /* ─── TIMELINE ─── */
+    .timeline {
+      position: relative;
+      opacity: 0; animation: fadeUp 0.7s ease 0.55s forwards;
+    }
+
+    /* Vertical gold line */
+    .timeline::before {
+      content: '';
+      position: absolute; top: 0; bottom: 0; left: 19px;
+      width: 1px;
+      background: linear-gradient(to bottom,
+        var(--gold-bright) 0%,
+        rgba(212,168,67,0.3) 60%,
+        transparent 100%
+      );
+    }
+
+    /* Year group */
+    .year-group { margin-bottom: 2.5rem; }
+    .year-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem; letter-spacing: 0.35em;
+      color: var(--gold-dim); text-transform: uppercase;
+      margin-bottom: 1rem;
+      padding-left: 3.2rem;
+      position: relative;
+    }
+    .year-label::before {
+      content: '';
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      width: 15px; height: 1px;
+      background: rgba(212,168,67,0.3);
+    }
+
+    /* Letter row */
+    .letter-row {
+      display: grid;
+      grid-template-columns: 40px 1fr auto;
+      gap: 0 1.5rem;
+      align-items: start;
+      margin-bottom: 1px;
+      position: relative;
+    }
+
+    /* Timeline dot */
+    .timeline-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-top: 1.6rem;
+      margin-left: 15px;
+      position: relative; z-index: 2;
+      flex-shrink: 0;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .timeline-dot.sealed {
+      background: var(--gold-bright);
+      box-shadow: 0 0 0 3px rgba(212,168,67,0.15);
+    }
+    .timeline-dot.delivered {
+      background: #6aab6e;
+      box-shadow: 0 0 0 3px rgba(106,171,110,0.15);
+    }
+    .timeline-dot.draft {
+      background: transparent;
+      border: 1px solid rgba(107,127,168,0.5);
+    }
+    .letter-row:hover .timeline-dot { transform: scale(1.4); }
+
+    /* Letter card */
+    .letter-card {
+      background: var(--navy-card);
+      border: 1px solid rgba(212,168,67,0.08);
+      padding: 1.6rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: start;
+      transition: border-color 0.3s, background 0.3s, transform 0.2s;
+      margin-bottom: 0.6rem;
+      cursor: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .letter-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+    .letter-card.sealed::before { background: var(--gold-bright); }
+    .letter-card.delivered::before { background: #6aab6e; }
+    .letter-card.draft::before { background: #6b7fa8; }
+    .letter-card:hover { border-color: rgba(212,168,67,0.25); background: rgba(15,28,48,0.9); transform: translateX(3px); }
+    .letter-card:hover::before { opacity: 1; }
+
+    .letter-card-left {}
+
+    .letter-card-header {
+      display: flex; align-items: center; gap: 0.8rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .status-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.48rem; letter-spacing: 0.2em; text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 0;
+    }
+    .status-badge.sealed {
+      color: var(--gold-bright);
+      background: rgba(212,168,67,0.1);
+      border: 1px solid rgba(212,168,67,0.25);
+    }
+    .status-badge.delivered {
+      color: #6aab6e;
+      background: rgba(106,171,110,0.1);
+      border: 1px solid rgba(106,171,110,0.25);
+    }
+    .status-badge.draft {
+      color: #6b7fa8;
+      background: rgba(107,127,168,0.1);
+      border: 1px solid rgba(107,127,168,0.2);
+    }
+
+    .letter-to-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.5rem; letter-spacing: 0.15em;
+      color: var(--navy-muted); text-transform: uppercase;
+    }
+    .letter-to-label span { color: var(--warm-tan); }
+
+    .letter-title {
+      font-size: 1.2rem; font-weight: 400; font-style: italic;
+      color: var(--warm-white); margin-bottom: 0.4rem;
+      line-height: 1.3;
+    }
+
+    .letter-excerpt {
+      font-family: 'EB Garamond', serif;
+      font-size: 0.9rem; font-style: italic;
+      color: var(--navy-muted);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Countdown / delivery info */
+    .letter-card-right {
+      display: flex; flex-direction: column;
+      align-items: flex-end; gap: 0.6rem;
+      min-width: 130px;
+    }
+
+    .delivery-date {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem; letter-spacing: 0.15em;
+      color: var(--gold-dim); text-transform: uppercase;
+      text-align: right;
+    }
+
+    .countdown-box {
+      background: rgba(212,168,67,0.06);
+      border: 1px solid rgba(212,168,67,0.12);
+      padding: 0.6rem 0.8rem;
+      text-align: center;
+      min-width: 110px;
+    }
+    .countdown-number {
+      font-size: 1.6rem; font-weight: 400; font-style: italic;
+      color: var(--gold-light); line-height: 1;
+      display: block;
+    }
+    .countdown-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.45rem; letter-spacing: 0.2em;
+      color: var(--gold-dim); text-transform: uppercase;
+      display: block; margin-top: 0.2rem;
+    }
+
+    .countdown-box.delivered-box {
+      background: rgba(106,171,110,0.06);
+      border-color: rgba(106,171,110,0.2);
+    }
+    .countdown-box.delivered-box .countdown-number { color: #6aab6e; font-size: 1rem; }
+
+    .countdown-box.draft-box {
+      background: rgba(107,127,168,0.06);
+      border-color: rgba(107,127,168,0.15);
+    }
+    .countdown-box.draft-box .countdown-number { color: #6b7fa8; font-size: 0.85rem; letter-spacing: 0.05em; }
+
+    .letter-actions {
+      display: flex; gap: 0.4rem;
+    }
+    .letter-action-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.48rem; letter-spacing: 0.15em; text-transform: uppercase;
+      padding: 0.3rem 0.7rem;
+      background: transparent;
+      border: 1px solid rgba(212,168,67,0.15);
+      color: var(--gold-dim); cursor: none;
+      transition: all 0.2s;
+    }
+    .letter-action-btn:hover { border-color: rgba(212,168,67,0.4); color: var(--gold-light); }
+
+    /* ─── EMPTY STATE ─── */
+    .empty-state {
+      text-align: center; padding: 5rem 2rem;
+      border: 1px dashed rgba(212,168,67,0.15);
+    }
+    .empty-icon {
+      font-size: 2.5rem; margin-bottom: 1.2rem;
+      opacity: 0.3;
+    }
+    .empty-title {
+      font-size: 1.4rem; font-style: italic;
+      color: var(--warm-tan); margin-bottom: 0.6rem;
+    }
+    .empty-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem; letter-spacing: 0.2em;
+      color: var(--navy-muted); text-transform: uppercase;
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 860px) {
+      nav { padding: 1rem 1.5rem; }
+      .page-wrap { padding: 5rem 1.2rem 4rem; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .letter-card { grid-template-columns: 1fr; }
+      .letter-card-right { flex-direction: row; align-items: center; flex-wrap: wrap; min-width: unset; }
+      .page-header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+    }
+    /* Auth Modal */
+    .auth-overlay {
+      position: fixed; inset: 0; background: rgba(9,16,30,0.98);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.4s;
+    }
+    .auth-overlay.active { opacity: 1; pointer-events: all; }
+    .auth-card {
+      width: 100%; max-width: 400px; padding: 3rem;
+      background: var(--navy-card); border: 1px solid rgba(212,168,67,0.2);
+      text-align: center;
+    }
+    .auth-input {
+      width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(212,168,67,0.2); color: var(--warm-white);
+      font-family: 'DM Mono', monospace; margin-bottom: 1.5rem; outline: none;
+    }
+    .auth-input:focus { border-color: var(--gold-bright); }
+    .btn-auth {
+      width: 100%; padding: 0.8rem; background: var(--gold-bright);
+      color: var(--navy-deep); border: none; font-family: 'Playfair Display', serif;
+      font-weight: 500; cursor: none; transition: 0.3s;
+    }
+    .btn-auth:hover { background: var(--gold-light); transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-left">
+      <a href="futurely-gold.html" class="nav-logo">Futur<span>ely</span></a>
+      <div class="nav-divider"></div>
+      <span class="nav-page">Your Vault</span>
+    </div>
+    <div class="nav-user">
+      <span class="nav-username">Aryan</span>
+      <div class="nav-avatar">AK</div>
+    </div>
+  </nav>
+
+  <!-- PAGE -->
+  <div class="page-wrap">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div class="page-title-block">
+        <p class="page-eyebrow">Your private collection</p>
+        <h1 class="page-title">The <em>Vault</em></h1>
+      </div>
+      <a href="futurely-composer.html" class="btn-compose">
+        <span class="btn-compose-icon">✦</span> Write a Letter
+      </a>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <p class="stat-label">Total Letters</p>
+        <p class="stat-value">7</p>
+        <p class="stat-sub">across <strong>4 recipients</strong></p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Sealed & Waiting</p>
+        <p class="stat-value">4</p>
+        <p class="stat-sub"><strong>in the vault</strong> right now</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Delivered</p>
+        <p class="stat-value">2</p>
+        <p class="stat-sub">letters <strong>opened</strong></p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Next Delivery</p>
+        <p class="stat-value" id="nextDeliveryDays">—</p>
+        <p class="stat-sub" id="nextDeliverySub">calculating…</p>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterLetters('all', this)">All</button>
+        <button class="filter-tab" onclick="filterLetters('sealed', this)">Sealed</button>
+        <button class="filter-tab" onclick="filterLetters('delivered', this)">Delivered</button>
+        <button class="filter-tab" onclick="filterLetters('draft', this)">Drafts</button>
+      </div>
+      <span class="filter-count" id="filterCount">Showing <span>0</span> letters</span>
+    </div>
+
+    <div class="empty-state" id="loadingState">
+      <p class="empty-sub">Opening the vault…</p>
+    </div>
+    <!-- TIMELINE -->
+    <div class="timeline" id="timeline" style="display:none;"></div>
+
+  </div>
+
+  <!-- AUTH OVERLAY -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card" id="authEmailStep">
+      <p class="sidebar-section-title">Sign in to open your vault</p>
+      <input type="email" class="auth-input" id="authEmail" placeholder="your@email.com">
+      <button class="btn-auth" onclick="requestPin()">Send Access Code</button>
+    </div>
+    <div class="auth-card" id="authPinStep" style="display:none;">
+      <p class="sidebar-section-title">Enter the 6-digit code</p>
+      <input type="text" class="auth-input" id="authPin" placeholder="123456" maxlength="6">
+      <button class="btn-auth" onclick="verifyPin()">Verify & Login</button>
+      <p class="nav-step" style="margin-top:1.5rem; cursor:pointer;" onclick="showEmailStep()">← Back</p>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    const auth = window.FuturelyAuth;
+
+    /* ── Auth Flow ── */
+    function checkLogin() {
+      if (!auth.isLoggedIn()) {
+        document.getElementById('authOverlay').classList.add('active');
+        document.getElementById('loadingState').style.display = 'none';
+      } else {
+        document.getElementById('authOverlay').classList.remove('active');
+        loadVault();
+      }
+    }
+
+    async function requestPin() {
+      const email = document.getElementById('authEmail').value.trim();
+      if (!email) return;
+      const res = await auth.requestPin(email);
+      if (res.success) {
+        document.getElementById('authEmailStep').style.display = 'none';
+        document.getElementById('authPinStep').style.display = 'block';
+      } else {
+        alert(res.error || 'Failed to send code');
+      }
+    }
+
+    async function verifyPin() {
+      const email = document.getElementById('authEmail').value.trim();
+      const pin = document.getElementById('authPin').value.trim();
+      const res = await auth.verifyPin(email, pin);
+      if (res.success) {
+        checkLogin();
+      } else {
+        alert(res.error || 'Invalid code');
+      }
+    }
+
+    function showEmailStep() {
+      document.getElementById('authEmailStep').style.display = 'block';
+      document.getElementById('authPinStep').style.display = 'none';
+    }
+
+    /* ── Data Logic ── */
+    let letters = [];
+
+    async function loadVault() {
+      document.getElementById('loadingState').style.display = 'block';
+      document.getElementById('timeline').style.display = 'none';
+
+      try {
+        const [statsRes, lettersRes] = await Promise.all([
+          auth.apiFetch('/vault/stats'),
+          auth.apiFetch('/letters')
+        ]);
+
+        if (statsRes.success) updateStatsDisplay(statsRes.stats);
+        if (lettersRes.success) {
+          letters = lettersRes.letters;
+          renderTimeline('all');
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('timeline').style.display = 'block';
+      }
+    }
+
+    function updateStatsDisplay(stats) {
+      document.querySelectorAll('.stat-value')[0].textContent = stats.total;
+      document.querySelectorAll('.stat-value')[1].textContent = stats.sealed;
+      document.querySelectorAll('.stat-value')[2].textContent = stats.delivered;
+      
+      const next = stats.nextDelivery;
+      if (next) {
+        const days = daysFromNow(next.deliver_on);
+        document.getElementById('nextDeliveryDays').textContent = days.toLocaleString();
+        document.getElementById('nextDeliverySub').innerHTML = `days until <strong>${next.salutation.slice(0,22)}…</strong>`;
+      } else {
+        document.getElementById('nextDeliveryDays').textContent = '—';
+        document.getElementById('nextDeliverySub').textContent = 'no pending deliveries';
+      }
+    }
+
+    /* ── Original UI Logic (Modified to use global letters) ── */
+    const cursor = document.getElementById('cursor');
+    const ring   = document.getElementById('cursorRing');
+    let mx=0,my=0,rx=0,ry=0;
+    document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; });
+    (function anim(){ cursor.style.left=mx+'px'; cursor.style.top=my+'px'; rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(anim); })();
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    function daysFromNow(dateStr) {
+      const d = new Date(dateStr); d.setHours(0,0,0,0);
+      return Math.round((d - today) / 86400000);
+    }
+
+    function countdownDisplay(letter) {
+      if (letter.status === 'delivered') {
+        return `<div class="countdown-box delivered-box">
+          <span class="countdown-number">✓ Opened</span>
+          <span class="countdown-label">${new Date(letter.delivered_at || letter.deliver_on).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+        </div>`;
+      }
+      if (letter.status === 'draft') {
+        return `<div class="countdown-box draft-box">
+          <span class="countdown-number">No date</span>
+          <span class="countdown-label">Unsent draft</span>
+        </div>`;
+      }
+      const days = daysFromNow(letter.deliver_on);
+      const yrs  = Math.floor(days / 365);
+      const mos  = Math.floor((days % 365) / 30);
+      let num, unit;
+      if (yrs >= 2)      { num = yrs;  unit = 'years away'; }
+      else if (yrs === 1){ num = yrs;  unit = 'year away'; }
+      else if (mos >= 1) { num = mos;  unit = mos===1?'month away':'months away'; }
+      else               { num = Math.max(0, days); unit = days===1?'day away':'days away'; }
+      return `<div class="countdown-box">
+        <span class="countdown-number">${num}</span>
+        <span class="countdown-label">${unit}</span>
+      </div>`;
+    }
+
+    function renderTimeline(filter = 'all') {
+      const filtered = filter === 'all' ? letters : letters.filter(l => l.status === filter);
+      document.getElementById('filterCount').innerHTML = `Showing <span>${filtered.length}</span> letter${filtered.length!==1?'s':''}`;
+
+      const groups = {};
+      filtered.forEach(l => {
+        const yr = new Date(l.created_at).getFullYear();
+        if (!groups[yr]) groups[yr] = [];
+        groups[yr].push(l);
+      });
+
+      const years = Object.keys(groups).sort((a,b) => b - a);
+      const tl = document.getElementById('timeline');
+
+      if (!filtered.length) {
+        tl.innerHTML = `<div class="empty-state">
+          <div class="empty-icon">✉</div>
+          <p class="empty-title">No letters found</p>
+          <p class="empty-sub">Your words are waiting to be written</p>
+        </div>`;
+        return;
+      }
+
+      tl.innerHTML = years.map(yr => `
+        <div class="year-group">
+          <div class="year-label">${yr}</div>
+          ${groups[yr].map(l => `
+            <div class="letter-row">
+              <div class="timeline-dot ${l.status}"></div>
+              <div class="letter-card ${l.status}" onclick="viewLetter('${l.id}', '${l.status}')">
+                <div class="letter-card-left">
+                  <div class="letter-card-header">
+                    <span class="status-badge ${l.status}">${l.status}</span>
+                    <span class="letter-to-label">To: <span>${l.recipient_name || 'Future Me'}</span></span>
+                  </div>
+                  <p class="letter-title">${l.salutation || 'Dear Future Me'}</p>
+                  <p class="letter-excerpt">${l.body.slice(0, 120)}...</p>
+                </div>
+                <div class="letter-card-right">
+                  <div class="delivery-date">${new Date(l.deliver_on).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+                  ${countdownDisplay(l)}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    function viewLetter(id, status) {
+      if (status === 'draft') window.location.href = `futurely-composer.html?id=${id}`;
+      else alert("This letter is sealed until its delivery date.");
+    }
+
+    function filterLetters(filter, btn) {
+      document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTimeline(filter);
+    }
+
+    /* ── Init ── */
+    checkLogin();
+  </script>
+</body>
+</html>

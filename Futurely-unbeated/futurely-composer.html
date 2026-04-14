@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Futurely — Write Your Letter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Mono:wght@300;400&family=Libre+Baskerville:ital,wght@0,400;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=GFS+Didot:wght@400&family=Spectral:ital,wght@0,300;0,400;1,300;1,400&family=Sorts+Mill+Goudy:ital@0;1&family=Gentium+Book+Plus:ital,wght@0,400;1,400&family=Cardo:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --navy-deep:   #09101e;
+      --navy-mid:    #111827;
+      --navy-soft:   #1a2540;
+      --navy-muted:  #2a3a5c;
+      --gold-bright: #d4a843;
+      --gold-light:  #e8c97a;
+      --gold-pale:   #f5e4b0;
+      --gold-dim:    #7a5f22;
+      --gold-glow:   rgba(212,168,67,0.18);
+      --warm-white:  #fdf8ee;
+      --warm-cream:  #f5ead6;
+      --warm-tan:    #c4a97a;
+      --paper-bg:    #f7f0e0;
+      --paper-line:  rgba(100,80,40,0.09);
+      --ink:         #1a1008;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; height: 100%; }
+    body {
+      background: var(--navy-deep);
+      color: var(--warm-white);
+      font-family: 'Playfair Display', Georgia, serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* Cursor */
+    .cursor {
+      position: fixed; width: 8px; height: 8px;
+      background: var(--gold-bright); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+    }
+    .cursor-ring {
+      position: fixed; width: 30px; height: 30px;
+      border: 1px solid rgba(212,168,67,0.5); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.15s ease;
+    }
+
+    /* Gold top line */
+    body::after {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright), var(--gold-light), var(--gold-bright), transparent);
+      z-index: 200; opacity: 0.8;
+    }
+
+    /* Grain */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 100; opacity: 0.65;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      padding: 1.4rem 3rem;
+      display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(to bottom, rgba(9,16,30,0.98) 0%, transparent 100%);
+      border-bottom: 1px solid rgba(212,168,67,0.08);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem; font-weight: 400;
+      letter-spacing: 0.12em; color: var(--gold-light);
+      text-decoration: none;
+    }
+    .nav-logo span { font-style: italic; color: var(--gold-bright); }
+    .nav-step {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.3em;
+      color: var(--gold-dim); text-transform: uppercase;
+    }
+    .nav-step strong { color: var(--gold-bright); font-weight: 400; }
+
+    /* ─── MAIN LAYOUT ─── */
+    .composer-wrap {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      padding-top: 64px;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      background: rgba(17,24,39,0.95);
+      border-right: 1px solid rgba(212,168,67,0.1);
+      padding: 2.5rem 1.8rem;
+      display: flex; flex-direction: column; gap: 2.5rem;
+      position: sticky; top: 64px; height: calc(100vh - 64px);
+      overflow-y: auto;
+    }
+
+    .sidebar-section-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem; letter-spacing: 0.35em;
+      color: var(--gold-dim); text-transform: uppercase;
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(212,168,67,0.1);
+    }
+
+    /* Font selector */
+    .font-options {
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+
+    .font-option {
+      padding: 0.85rem 1rem;
+      border: 1px solid rgba(212,168,67,0.12);
+      background: transparent;
+      cursor: none;
+      transition: all 0.25s ease;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+    .font-option::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(212,168,67,0.08), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .font-option:hover::before { opacity: 1; }
+    .font-option:hover { border-color: rgba(212,168,67,0.35); }
+    .font-option.active {
+      border-color: var(--gold-bright);
+      background: rgba(212,168,67,0.06);
+    }
+    .font-option.active::after {
+      content: '✦';
+      position: absolute; right: 0.8rem; top: 50%;
+      transform: translateY(-50%);
+      color: var(--gold-bright); font-size: 0.5rem;
+    }
+
+    .font-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.52rem; letter-spacing: 0.2em;
+      color: var(--gold-dim); text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+    .font-preview {
+      font-size: 1.05rem; color: var(--warm-cream);
+      line-height: 1.3;
+    }
+
+    /* Text size */
+    .size-slider-wrap {
+      display: flex; flex-direction: column; gap: 0.8rem;
+    }
+    .size-label-row {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .size-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem; color: var(--gold-bright);
+    }
+    input[type="range"] {
+      -webkit-appearance: none; width: 100%; height: 2px;
+      background: rgba(212,168,67,0.2); outline: none; cursor: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px;
+      border-radius: 50%; background: var(--gold-bright);
+      cursor: none; border: 2px solid var(--navy-deep);
+      box-shadow: 0 0 8px rgba(212,168,67,0.5);
+    }
+
+    /* Paper style */
+    .paper-options {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
+    }
+    .paper-option {
+      padding: 0.7rem 0.6rem;
+      border: 1px solid rgba(212,168,67,0.12);
+      cursor: none; text-align: center;
+      transition: all 0.25s;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.5rem; letter-spacing: 0.1em;
+      color: var(--warm-tan); text-transform: uppercase;
+    }
+    .paper-option:hover { border-color: rgba(212,168,67,0.35); color: var(--gold-light); }
+    .paper-option.active {
+      border-color: var(--gold-bright);
+      color: var(--gold-bright);
+      background: rgba(212,168,67,0.06);
+    }
+    .paper-swatch {
+      width: 100%; height: 28px; margin-bottom: 0.4rem;
+      border: 1px solid rgba(212,168,67,0.1);
+    }
+
+    /* Word count */
+    .word-count-display {
+      background: rgba(212,168,67,0.04);
+      border: 1px solid rgba(212,168,67,0.1);
+      padding: 1rem;
+    }
+    .wc-row {
+      display: flex; justify-content: space-between;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem; letter-spacing: 0.15em;
+      color: var(--warm-tan); text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .wc-row:last-child { margin-bottom: 0; }
+    .wc-row span:last-child { color: var(--gold-bright); font-weight: 400; }
+    .wc-bar {
+      height: 1px; background: rgba(212,168,67,0.15);
+      margin: 0.7rem 0; position: relative;
+    }
+    .wc-fill {
+      position: absolute; top: 0; left: 0; height: 100%;
+      background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright));
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ─── WRITING AREA ─── */
+    .writing-area {
+      display: flex; flex-direction: column;
+      align-items: center;
+      padding: 3rem 2rem 6rem;
+      background: radial-gradient(ellipse at 50% 0%, rgba(212,168,67,0.04) 0%, transparent 60%);
+      position: relative;
+    }
+
+    /* Ambient glow */
+    .writing-area::before {
+      content: '';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, rgba(212,168,67,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Paper sheet */
+    .paper {
+      width: 100%; max-width: 680px;
+      min-height: 780px;
+      position: relative;
+      box-shadow:
+        0 4px 6px rgba(0,0,0,0.15),
+        0 16px 48px rgba(0,0,0,0.35),
+        0 0 80px rgba(212,168,67,0.06);
+      transition: box-shadow 0.4s ease;
+      animation: paperDrop 0.7s cubic-bezier(0.22,1,0.36,1) forwards;
+    }
+    @keyframes paperDrop {
+      from { opacity: 0; transform: translateY(30px) rotate(0.5deg); }
+      to   { opacity: 1; transform: translateY(0) rotate(0deg); }
+    }
+
+    /* Paper inner */
+    .paper-inner {
+      width: 100%; min-height: 780px;
+      padding: 4rem 4.5rem 5rem;
+      position: relative;
+      transition: background 0.4s ease, background-image 0.4s ease;
+    }
+
+    /* Paper styles */
+    .paper-inner.style-lined {
+      background: var(--paper-bg);
+      background-image:
+        repeating-linear-gradient(
+          transparent, transparent 31px,
+          var(--paper-line) 31px, var(--paper-line) 32px
+        );
+      background-position: 0 48px;
+    }
+    .paper-inner.style-plain {
+      background: var(--paper-bg);
+    }
+    .paper-inner.style-aged {
+      background: #ede0c4;
+      background-image:
+        repeating-linear-gradient(
+          transparent, transparent 31px,
+          rgba(100,70,30,0.08) 31px, rgba(100,70,30,0.08) 32px
+        );
+      background-position: 0 48px;
+    }
+    .paper-inner.style-ivory {
+      background: #f9f4e8;
+    }
+
+    /* Left margin line */
+    .paper-inner::before {
+      content: '';
+      position: absolute; top: 0; bottom: 0; left: 4rem;
+      width: 1px;
+      background: rgba(212,100,100,0.12);
+      pointer-events: none;
+    }
+
+    /* Gold top border on paper */
+    .paper-top-accent {
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, transparent 5%, var(--gold-bright) 30%, var(--gold-light) 50%, var(--gold-bright) 70%, transparent 95%);
+      opacity: 0.7;
+    }
+
+    /* Wax seal corner decoration */
+    .paper-corner {
+      position: absolute; top: 1.2rem; right: 1.5rem;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem;
+    }
+    .paper-corner-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.48rem; letter-spacing: 0.2em;
+      color: var(--gold-dim); text-transform: uppercase;
+    }
+    .paper-corner-date {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.52rem; color: var(--ink);
+      opacity: 0.5; letter-spacing: 0.1em;
+    }
+
+    /* Letter header */
+    .letter-header {
+      margin-bottom: 2rem;
+      position: relative; z-index: 1;
+    }
+    .letter-salutation-input {
+      font-size: 1.1rem;
+      color: var(--ink); background: transparent; border: none; outline: none;
+      border-bottom: 1px dashed rgba(100,80,40,0.25);
+      padding: 0.2rem 0; width: 100%; cursor: none;
+      font-style: italic;
+      transition: border-color 0.2s;
+    }
+    .letter-salutation-input::placeholder { color: rgba(100,80,40,0.35); }
+    .letter-salutation-input:focus { border-bottom-color: var(--gold-bright); }
+
+    /* Letter body textarea */
+    .letter-textarea {
+      width: 100%; min-height: 500px;
+      background: transparent; border: none; outline: none;
+      resize: none; line-height: 2;
+      color: var(--ink);
+      caret-color: var(--gold-bright);
+      position: relative; z-index: 1;
+      cursor: none;
+      transition: font-family 0.2s, font-size 0.2s;
+    }
+    .letter-textarea::placeholder {
+      color: rgba(100,80,40,0.3);
+      font-style: italic;
+    }
+
+    /* Letter sign-off */
+    .letter-signoff {
+      margin-top: 1.5rem;
+      position: relative; z-index: 1;
+    }
+    .signoff-input {
+      font-size: 1.1rem;
+      font-style: italic;
+      color: var(--gold-dim); background: transparent; border: none; outline: none;
+      border-bottom: 1px dashed rgba(100,80,40,0.2);
+      padding: 0.2rem 0; width: 60%; cursor: none;
+      transition: border-color 0.2s;
+    }
+    .signoff-input::placeholder { color: rgba(150,110,50,0.4); }
+    .signoff-input:focus { border-bottom-color: var(--gold-bright); }
+
+    /* ─── BOTTOM BAR ─── */
+    .bottom-bar {
+      position: fixed; bottom: 0; left: 280px; right: 0;
+      background: rgba(9,16,30,0.97);
+      border-top: 1px solid rgba(212,168,67,0.12);
+      padding: 1rem 2.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .bottom-hint {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.55rem; letter-spacing: 0.2em;
+      color: var(--navy-muted); text-transform: uppercase;
+    }
+    .bottom-hint span { color: var(--gold-dim); }
+
+    .bottom-actions { display: flex; gap: 1rem; align-items: center; }
+
+    .btn-save {
+      padding: 0.7rem 1.6rem;
+      background: transparent;
+      border: 1px solid rgba(212,168,67,0.35);
+      color: var(--gold-light);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+      cursor: none; transition: all 0.25s;
+    }
+    .btn-save:hover {
+      border-color: var(--gold-bright);
+      background: rgba(212,168,67,0.06);
+      color: var(--gold-bright);
+    }
+
+    .btn-seal {
+      padding: 0.7rem 2rem;
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold-light), var(--gold-bright));
+      background-size: 200%;
+      color: var(--navy-deep);
+      font-family: 'Playfair Display', serif;
+      font-size: 0.88rem; font-weight: 500;
+      letter-spacing: 0.06em; font-style: italic;
+      cursor: none; border: none;
+      box-shadow: 0 4px 20px rgba(212,168,67,0.35);
+      transition: all 0.3s ease;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-seal:hover {
+      background-position: right;
+      box-shadow: 0 6px 30px rgba(212,168,67,0.5);
+      transform: translateY(-1px);
+    }
+    .seal-icon { font-size: 0.9rem; }
+
+    /* ─── SEAL OVERLAY ─── */
+    .seal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(9,16,30,0.97);
+      z-index: 500;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .seal-overlay.active { opacity: 1; pointer-events: all; }
+
+    .seal-animation {
+      width: 160px; height: 160px;
+      position: relative; margin-bottom: 2.5rem;
+    }
+
+    /* Wax seal SVG circles */
+    .seal-circle-outer {
+      position: absolute; inset: 0;
+      border: 2px solid rgba(212,168,67,0.4);
+      border-radius: 50%;
+      animation: sealPulse 2s ease-in-out infinite;
+    }
+    .seal-circle-mid {
+      position: absolute; inset: 12px;
+      border: 1px solid rgba(212,168,67,0.6);
+      border-radius: 50%;
+      animation: sealPulse 2s ease-in-out 0.2s infinite;
+    }
+    .seal-disc {
+      position: absolute; inset: 24px;
+      background: radial-gradient(circle at 40% 35%, var(--gold-light), var(--gold-bright) 50%, var(--gold-dim));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 24px rgba(212,168,67,0.5), inset 0 2px 4px rgba(255,255,255,0.2);
+      animation: sealDrop 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    @keyframes sealDrop {
+      from { transform: scale(0) rotate(-20deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    @keyframes sealPulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.03); }
+    }
+
+    .seal-letter {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-style: italic; font-weight: 700;
+      color: var(--navy-deep); line-height: 1;
+    }
+
+    .seal-title {
+      font-size: 1.8rem; font-weight: 400; font-style: italic;
+      color: var(--gold-light); margin-bottom: 0.8rem;
+      text-align: center;
+    }
+    .seal-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem; letter-spacing: 0.3em;
+      color: var(--gold-dim); text-transform: uppercase;
+      text-align: center; margin-bottom: 3rem;
+    }
+
+    .seal-close {
+      padding: 0.7rem 2rem;
+      background: transparent;
+      border: 1px solid rgba(212,168,67,0.3);
+      color: var(--gold-light);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+      cursor: none; transition: all 0.25s;
+    }
+    .seal-close:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .composer-wrap { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; gap: 1.5rem; padding: 1.5rem; }
+      .bottom-bar { left: 0; padding: 0.8rem 1.2rem; }
+      .paper-inner { padding: 2.5rem 2rem 4rem; }
+      nav { padding: 1rem 1.5rem; }
+    }
+    /* Auth Modal */
+    .auth-overlay {
+      position: fixed; inset: 0; background: rgba(9,16,30,0.98);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.4s;
+    }
+    .auth-overlay.active { opacity: 1; pointer-events: all; }
+    .auth-card {
+      width: 100%; max-width: 400px; padding: 3rem;
+      background: var(--navy-card); border: 1px solid rgba(212,168,67,0.2);
+      text-align: center;
+    }
+    .auth-input {
+      width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(212,168,67,0.2); color: var(--warm-white);
+      font-family: 'DM Mono', monospace; margin-bottom: 1.5rem; outline: none;
+    }
+    .auth-input:focus { border-color: var(--gold-bright); }
+    .btn-auth {
+      width: 100%; padding: 0.8rem; background: var(--gold-bright);
+      color: var(--navy-deep); border: none; font-family: 'Playfair Display', serif;
+      font-weight: 500; cursor: none; transition: 0.3s;
+    }
+    .btn-auth:hover { background: var(--gold-light); transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="futurely-gold.html" class="nav-logo">Futur<span>ely</span></a>
+    <span class="nav-step">Compose your <strong>letter</strong></span>
+  </nav>
+
+  <!-- MAIN LAYOUT -->
+  <div class="composer-wrap">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+      <!-- Font selector -->
+      <div>
+        <p class="sidebar-section-title">Letter Style</p>
+        <div class="font-options">
+          <button class="font-option active" data-font="'EB Garamond', serif" onclick="setFont(this)">
+            <div class="font-name">Garamond</div>
+            <div class="font-preview" style="font-family:'EB Garamond',serif; font-style:italic;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'Lora', serif" onclick="setFont(this)">
+            <div class="font-name">Lora</div>
+            <div class="font-preview" style="font-family:'Lora',serif; font-style:italic;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'Libre Baskerville', serif" onclick="setFont(this)">
+            <div class="font-name">Baskerville</div>
+            <div class="font-preview" style="font-family:'Libre Baskerville',serif; font-style:italic;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'Crimson Pro', serif" onclick="setFont(this)">
+            <div class="font-name">Crimson</div>
+            <div class="font-preview" style="font-family:'Crimson Pro',serif; font-style:italic;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'Cormorant Garamond', serif" onclick="setFont(this)">
+            <div class="font-name">Cormorant</div>
+            <div class="font-preview" style="font-family:'Cormorant Garamond',serif; font-style:italic;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'GFS Didot', serif" onclick="setFont(this)">
+            <div class="font-name">Didot</div>
+            <div class="font-preview" style="font-family:'GFS Didot',serif;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'Spectral', serif" onclick="setFont(this)">
+            <div class="font-name">Spectral</div>
+            <div class="font-preview" style="font-family:'Spectral',serif; font-style:italic; font-weight:300;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'Sorts Mill Goudy', serif" onclick="setFont(this)">
+            <div class="font-name">Goudy</div>
+            <div class="font-preview" style="font-family:'Sorts Mill Goudy',serif; font-style:italic;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'Gentium Book Plus', serif" onclick="setFont(this)">
+            <div class="font-name">Gentium</div>
+            <div class="font-preview" style="font-family:'Gentium Book Plus',serif; font-style:italic;">Dear future me,</div>
+          </button>
+          <button class="font-option" data-font="'Cardo', serif" onclick="setFont(this)">
+            <div class="font-name">Cardo</div>
+            <div class="font-preview" style="font-family:'Cardo',serif; font-style:italic;">Dear future me,</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Text size -->
+      <div>
+        <p class="sidebar-section-title">Text Size</p>
+        <div class="size-slider-wrap">
+          <div class="size-label-row">
+            <span class="sidebar-section-title" style="margin:0; border:none; padding:0;">Size</span>
+            <span class="size-value" id="sizeVal">16px</span>
+          </div>
+          <input type="range" min="13" max="22" value="16" id="fontSizeSlider" oninput="setSize(this.value)" />
+        </div>
+      </div>
+
+      <!-- Paper style -->
+      <div>
+        <p class="sidebar-section-title">Paper</p>
+        <div class="paper-options">
+          <button class="paper-option active" data-style="style-lined" onclick="setPaper(this)">
+            <div class="paper-swatch" style="background: repeating-linear-gradient(transparent,transparent 7px,rgba(100,80,40,0.15) 7px,rgba(100,80,40,0.15) 8px); background-color:#f7f0e0;"></div>
+            Lined
+          </button>
+          <button class="paper-option" data-style="style-plain" onclick="setPaper(this)">
+            <div class="paper-swatch" style="background:#f7f0e0;"></div>
+            Plain
+          </button>
+          <button class="paper-option" data-style="style-aged" onclick="setPaper(this)">
+            <div class="paper-swatch" style="background:#ede0c4; background-image:repeating-linear-gradient(transparent,transparent 7px,rgba(100,70,30,0.12) 7px,rgba(100,70,30,0.12) 8px);"></div>
+            Aged
+          </button>
+          <button class="paper-option" data-style="style-ivory" onclick="setPaper(this)">
+            <div class="paper-swatch" style="background:#f9f4e8;"></div>
+            Ivory
+          </button>
+        </div>
+      </div>
+
+      <!-- Word count -->
+      <div>
+        <p class="sidebar-section-title">Progress</p>
+        <div class="word-count-display">
+          <div class="wc-row">
+            <span>Words</span>
+            <span id="wordCount">0</span>
+          </div>
+          <div class="wc-bar"><div class="wc-fill" id="wcFill"></div></div>
+          <div class="wc-row">
+            <span>Characters</span>
+            <span id="charCount">0</span>
+          </div>
+          <div class="wc-row">
+            <span>Est. read time</span>
+            <span id="readTime">0 sec</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- WRITING AREA -->
+    <main class="writing-area">
+      <div class="paper">
+        <div class="paper-inner style-lined" id="paperInner">
+          <div class="paper-top-accent"></div>
+
+          <div class="paper-corner">
+            <span class="paper-corner-tag">Futurely</span>
+            <span class="paper-corner-date" id="todayDate"></span>
+          </div>
+
+          <!-- Salutation -->
+          <div class="letter-header">
+            <input
+              type="text"
+              class="letter-salutation-input"
+              id="salutation"
+              placeholder="Dear future me,"
+              value=""
+            />
+          </div>
+
+          <!-- Body -->
+          <textarea
+            class="letter-textarea"
+            id="letterBody"
+            placeholder="Begin writing your letter here. Don't worry about perfection — just write what your future self needs to hear…"
+            oninput="updateStats()"
+          ></textarea>
+
+          <!-- Sign-off -->
+          <div class="letter-signoff">
+            <input
+              type="text"
+              class="signoff-input"
+              id="signoff"
+              placeholder="— With love, your past self"
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar">
+    <span class="bottom-hint">Writing to <span id="recipientHint">yourself</span> · Opens <span id="deliveryHint">on your chosen date</span></span>
+    <div class="bottom-actions">
+      <button class="btn-save">Save Draft</button>
+      <button class="btn-seal" onclick="triggerSeal()">
+        <span class="seal-icon">✦</span> Seal the Letter
+      </button>
+    </div>
+  </div>
+
+  <!-- SEAL OVERLAY -->
+  <div class="seal-overlay" id="sealOverlay">
+    <div class="seal-animation">
+      <div class="seal-circle-outer"></div>
+      <div class="seal-circle-mid"></div>
+      <div class="seal-disc">
+        <span class="seal-letter">F</span>
+      </div>
+    </div>
+    <p class="seal-title">Your letter is sealed.</p>
+    <p class="seal-sub">Locked away until the moment arrives</p>
+    <button class="seal-close" onclick="closeSeal()">Return to Dashboard</button>
+  </div>
+
+  <!-- AUTH OVERLAY -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card" id="authEmailStep">
+      <p class="sidebar-section-title">Sign in to craft your letter</p>
+      <input type="email" class="auth-input" id="authEmail" placeholder="your@email.com">
+      <button class="btn-auth" onclick="requestPin()">Send Access Code</button>
+    </div>
+    <div class="auth-card" id="authPinStep" style="display:none;">
+      <p class="sidebar-section-title">Enter the 6-digit code</p>
+      <input type="text" class="auth-input" id="authPin" placeholder="123456" maxlength="6">
+      <button class="btn-auth" onclick="verifyPin()">Verify & Login</button>
+      <p class="nav-step" style="margin-top:1.5rem; cursor:pointer;" onclick="showEmailStep()">← Back</p>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    const auth = window.FuturelyAuth;
+
+    // --- Auth Check & Initial Load ---
+    let currentLetterId = new URLSearchParams(window.location.search).get('id');
+    let autoSaveTimeout = null;
+
+    async function checkLogin() {
+      if (!auth.isLoggedIn()) {
+        document.getElementById('authOverlay').classList.add('active');
+      } else {
+        document.getElementById('authOverlay').classList.remove('active');
+        if (currentLetterId) {
+          await loadLetter(currentLetterId);
+        }
+      }
+    }
+    checkLogin();
+
+    async function loadLetter(id) {
+      const res = await auth.apiFetch(`/letters/${id}`);
+      if (res.success && res.letter) {
+        const l = res.letter;
+        document.getElementById('letterBody').value = l.body;
+        document.getElementById('salutation').value = l.salutation || '';
+        document.getElementById('signoff').value    = l.sign_off || '';
+        if (l.font_family) {
+          const btn = Array.from(document.querySelectorAll('.font-option')).find(b => b.dataset.font === l.font_family);
+          if (btn) setFont(btn);
+        }
+        if (l.font_size) {
+          document.getElementById('fontSizeSlider').value = l.font_size;
+          setSize(l.font_size);
+        }
+        if (l.paper_style) {
+          const btn = Array.from(document.querySelectorAll('.paper-option')).find(b => b.dataset.style === 'style-' + l.paper_style);
+          if (btn) setPaper(btn);
+        }
+        updateStats();
+      }
+    }
+
+    // --- Auto-Save Logic ---
+    function triggerAutoSave() {
+      clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(saveDraft, 2000); // Save after 2s of inactivity
+    }
+
+    async function saveDraft() {
+      const body = document.getElementById('letterBody').value.trim();
+      if (!body) return;
+
+      const salutation = document.getElementById('salutation').value;
+      const signOff = document.getElementById('signoff').value;
+      const fontFamily = document.querySelector('.font-option.active').dataset.font;
+      const fontSize = document.getElementById('fontSizeSlider').value;
+      const paperStyle = document.querySelector('.paper-option.active').dataset.style.replace('style-','');
+      const deliverOn = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const res = await auth.apiFetch('/letters', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: currentLetterId, // If ID exists, the worker should update
+          salutation, body, signOff, fontFamily, fontSize, paperStyle, deliverOn,
+          deliveryChannel: 'email',
+          recipientEmail: 'me@example.com'
+        })
+      });
+
+      if (res.success && !currentLetterId) {
+        currentLetterId = res.letterId;
+        window.history.replaceState({}, '', `?id=${res.letterId}`);
+      }
+    }
+
+    async function requestPin() {
+      const email = document.getElementById('authEmail').value.trim();
+      if (!email) return;
+      const res = await auth.requestPin(email);
+      if (res.success) {
+        document.getElementById('authEmailStep').style.display = 'none';
+        document.getElementById('authPinStep').style.display = 'block';
+      } else {
+        alert(res.error || 'Failed to send code');
+      }
+    }
+
+    async function verifyPin() {
+      const email = document.getElementById('authEmail').value.trim();
+      const pin = document.getElementById('authPin').value.trim();
+      const res = await auth.verifyPin(email, pin);
+      if (res.success) {
+        checkLogin();
+      } else {
+        alert(res.error || 'Invalid code');
+      }
+    }
+
+    function showEmailStep() {
+      document.getElementById('authEmailStep').style.display = 'block';
+      document.getElementById('authPinStep').style.display = 'none';
+    }
+
+    // --- Original UI Scripts ---
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    (function animC() {
+      cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+      rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(animC);
+    })();
+
+    // Today's date
+    const d = new Date();
+    document.getElementById('todayDate').textContent =
+      d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Font selector
+    function setFont(btn) {
+      document.querySelectorAll('.font-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.font;
+      const ta = document.getElementById('letterBody');
+      const sal = document.getElementById('salutation');
+      const sig = document.getElementById('signoff');
+      ta.style.fontFamily = f;
+      sal.style.fontFamily = f;
+      sig.style.fontFamily = f;
+    }
+
+    // Text size
+    function setSize(v) {
+      document.getElementById('sizeVal').textContent = v + 'px';
+      const ta = document.getElementById('letterBody');
+      ta.style.fontSize = v + 'px';
+    }
+
+    // Paper style
+    function setPaper(btn) {
+      document.querySelectorAll('.paper-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const pi = document.getElementById('paperInner');
+      pi.className = 'paper-inner ' + btn.dataset.style;
+    }
+
+    // Word / char count
+    function updateStats() {
+      triggerAutoSave();
+      const text = document.getElementById('letterBody').value;
+      const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+      const chars = text.length;
+      const readSecs = Math.max(1, Math.round((words / 200) * 60));
+      document.getElementById('wordCount').textContent = words;
+      document.getElementById('charCount').textContent = chars;
+      document.getElementById('readTime').textContent =
+        readSecs < 60 ? readSecs + ' sec' : Math.round(readSecs / 60) + ' min';
+      // bar: max 500 words = 100%
+      const pct = Math.min(100, (words / 500) * 100);
+      document.getElementById('wcFill').style.width = pct + '%';
+    }
+
+    // Seal animation & API SAVE
+    async function triggerSeal() {
+      const body = document.getElementById('letterBody').value.trim();
+      const salutation = document.getElementById('salutation').value || 'Dear future me,';
+      const signOff = document.getElementById('signoff').value || '— Your past self';
+      const fontFamily = document.querySelector('.font-option.active').dataset.font;
+      const fontSize = document.getElementById('fontSizeSlider').value;
+      const paperStyle = document.querySelector('.paper-option.active').dataset.style.replace('style-','');
+      
+      // We need a delivery date for the API. Mocking it for now as +1 year if not set.
+      const deliverOn = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      if (!body) {
+        document.getElementById('letterBody').focus();
+        document.getElementById('letterBody').placeholder = 'Your letter needs some words before it can be sealed…';
+        return;
+      }
+
+      // PRE-SAVE DRAFT & SEAL
+      const btn = document.querySelector('.btn-seal');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      try {
+        const res = await auth.apiFetch('/letters', {
+          method: 'POST',
+          body: JSON.stringify({
+            salutation, body, signOff, fontFamily, fontSize, paperStyle, deliverOn,
+            deliveryChannel: 'email',
+            recipientEmail: 'me@example.com' // Mock recipient for now
+          })
+        });
+
+        if (res.success) {
+          // Now Seal it
+          const sealRes = await auth.apiFetch(`/letters/${res.letterId}/seal`, { method: 'PATCH' });
+          if (sealRes.success) {
+            document.getElementById('sealOverlay').classList.add('active');
+          } else {
+            alert('Failed to seal: ' + sealRes.error);
+          }
+        } else {
+          alert('Failed to save letter: ' + res.error);
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Network error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="seal-icon">✦</span> Seal the Letter';
+      }
+    }
+    function closeSeal() {
+      window.location.href = 'futurely-vault.html';
+    }
+  </script>
+</body>
+</html>

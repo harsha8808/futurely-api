@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+.DS_Store
+dist/
+.env
+secret.txt
+wrangler.toml
+**/node_modules/
+**/dist/
