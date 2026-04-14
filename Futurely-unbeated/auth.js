@@ -2,7 +2,7 @@
  * Futurely — Frontend Auth & API Utility
  */
 
-const API_BASE = 'http://localhost:8787/api'; // Update to your worker domain after deploy
+const API_BASE = 'https://api.futurely.unbeated.com/api';
 
 const Auth = {
   // --- Session Management ---
