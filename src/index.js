@@ -36,9 +36,9 @@ function getCorsHeaders(request, env) {
   const origin = request.headers.get('Origin') || '';
   const allowed = env.CORS_ORIGIN || 'https://futurely.unbeated.com';
   
-  // Allow the specific origin if it matches the domain or is the default allowed
+  // More robust origin check
   const isAllowed = origin === allowed || 
-                    origin.endsWith('.unbeated.com') || 
+                    origin.includes('unbeated.com') || 
                     origin.includes('localhost') || 
                     origin.includes('127.0.0.1');
 
@@ -52,10 +52,10 @@ function getCorsHeaders(request, env) {
 }
 
 function applyCors(response, request, env) {
-  const headers = new Headers(response.headers);
+  const newResponse = new Response(response.body, response);
   const cors = getCorsHeaders(request, env);
-  Object.entries(cors).forEach(([k, v]) => headers.set(k, v));
-  return new Response(response.body, { status: response.status, headers });
+  Object.entries(cors).forEach(([k, v]) => newResponse.headers.set(k, v));
+  return newResponse;
 }
 
 // ─── Router ──────────────────────────────────────────────────
@@ -66,6 +66,8 @@ export default {
     const url    = new URL(request.url);
     const path   = url.pathname;
     const method = request.method;
+
+    console.log(`[Worker] ${method} ${path} (Origin: ${origin})`);
 
     if (method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: getCorsHeaders(request, env) });
