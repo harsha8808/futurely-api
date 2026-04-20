@@ -1,14 +1,38 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "futurely-api",
-  "compatibility_date": "2026-04-14",
-  "observability": {
-    "enabled": true
-  },
+  "main": "src/index.js",
+  "compatibility_date": "2024-01-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": "Futurely-unbeated"
   },
-  "compatibility_flags": [
-    "nodejs_compat"
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "ENVIRONMENT": "production",
+    "CORS_ORIGIN": "https://futurely.unbeated.com",
+    "FROM_EMAIL": "Futurely <letters@futurely.unbeated.com>"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "futurely-db1",
+      "database_id": "2d2f6a6d-9bae-4e32-97f8-36c41ef8ccc5"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 8 * * *"
+    ]
+  },
+  "routes": [
+    {
+      "pattern": "api.futurely.unbeated.com/*",
+      "zone_name": "unbeated.com"
+    }
   ]
 }
