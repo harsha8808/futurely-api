@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "futurely-backend",
+  "name": "futurely-api",
   "compatibility_date": "2026-04-14",
   "observability": {
     "enabled": true
