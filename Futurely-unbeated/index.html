@@ -1,28 +1,15 @@
-<!--
-  ================================================================
-  FUTURELY — AUTH FIXES (Patch for index.html)
-  ================================================================
-  CHANGES vs original:
-  1.  Added .auth-error CSS    → inline red error msg (no more alert())
-  2.  Added .auth-timer CSS    → gold countdown on PIN step
-  3.  Added .shake CSS         → input shake animation on wrong PIN
-  4.  Auth modal HTML          → error divs + resend + timer elements
-  5.  requestPin()             → inline error, no alert()
-  6.  verifyPin()              → inline error + shake, no alert()
-  7.  showPinStep()            → starts 10-min countdown
-  8.  resendPin()              → resend link on PIN step
-  9.  startPinTimer()          → countdown HH:MM display
-  ================================================================
-  HOW TO USE:
-  Copy the CSS block into <style> in index.html (before </style>)
-  Replace the auth modal HTML and inline <script> with versions below.
-  ================================================================
--->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Futurely — Write Today. Be Heard Tomorrow.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Mono:wght@300;400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
 
-<!-- ============================================================
-     1.  ADD THIS CSS inside the <style> block (before </style>)
-     ============================================================ -->
-<style id="auth-fix-css-to-add">
+  <style>
+    <style id="auth-fix-css-to-add">
   /* Auth error message */
   .auth-error {
     color: #e05c5c;
@@ -368,3 +355,784 @@
   }, { threshold: 0.12 });
   reveals.forEach(el => io.observe(el));
 </script>
+
+    :root {
+      --navy-deep:    #0b0f1a;
+      --navy-mid:     #111827;
+      --navy-soft:    #1a2540;
+      --navy-muted:   #2a3a5c;
+      --gold-bright:  #d4a843;
+      --gold-light:   #e8c97a;
+      --gold-pale:    #f5e4b0;
+      --gold-dim:     #8a6a28;
+      --warm-white:   #fdf8ee;
+      --warm-cream:   #f5ead6;
+      --warm-tan:     #c4a97a;
+      --ink:          #0b0f1a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--navy-deep);
+      color: var(--warm-white);
+      font-family: 'Playfair Display', Georgia, serif;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* Custom cursor */
+    .cursor {
+      position: fixed;
+      width: 8px; height: 8px;
+      background: var(--gold-bright);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width 0.3s, height 0.3s;
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 32px; height: 32px;
+      border: 1px solid rgba(212,168,67,0.5);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.18s ease;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 100; opacity: 0.7;
+    }
+
+    /* Gold shimmer line at very top */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright), var(--gold-light), var(--gold-bright), transparent);
+      z-index: 200;
+      opacity: 0.8;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 50;
+      padding: 1.6rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(to bottom, rgba(11,15,26,0.98) 0%, transparent 100%);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem; font-weight: 400;
+      letter-spacing: 0.12em;
+      color: var(--gold-light);
+      text-decoration: none;
+    }
+    .nav-logo span { font-style: italic; color: var(--gold-bright); }
+    .nav-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem; letter-spacing: 0.22em;
+      color: var(--gold-dim); text-transform: uppercase;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: flex-start;
+      padding: 8rem 3rem 5rem;
+      position: relative; overflow: hidden;
+    }
+
+    /* Radial gold glow background */
+    .hero-glow {
+      position: absolute;
+      right: 15vw; top: 50%;
+      transform: translateY(-50%);
+      width: 55vw; height: 55vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,168,67,0.07) 0%, rgba(212,168,67,0.03) 40%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Concentric gold rings */
+    .hero-ring-1 {
+      position: absolute; right: -8vw; top: 50%;
+      transform: translateY(-50%);
+      width: 62vw; height: 62vw; border-radius: 50%;
+      border: 1px solid rgba(212,168,67,0.1);
+      pointer-events: none;
+    }
+    .hero-ring-2 {
+      position: absolute; right: -2vw; top: 50%;
+      transform: translateY(-50%);
+      width: 46vw; height: 46vw; border-radius: 50%;
+      border: 1px solid rgba(212,168,67,0.07);
+      pointer-events: none;
+    }
+
+    /* Floating envelope */
+    .envelope-float {
+      position: absolute; right: 12vw; top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.22;
+      animation: floatEnvelope 6s ease-in-out infinite;
+    }
+    @keyframes floatEnvelope {
+      0%, 100% { transform: translateY(-50%) rotate(-2deg); }
+      50%       { transform: translateY(calc(-50% - 20px)) rotate(2deg); }
+    }
+
+    .hero-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem; letter-spacing: 0.35em;
+      color: var(--gold-bright); text-transform: uppercase;
+      margin-bottom: 2rem;
+      opacity: 0; animation: fadeUp 0.8s ease 0.3s forwards;
+    }
+
+    .hero-headline {
+      font-size: clamp(3.5rem, 8vw, 8rem);
+      font-weight: 400; line-height: 1.02;
+      letter-spacing: -0.01em;
+      color: var(--warm-white);
+      max-width: 14ch;
+      opacity: 0; animation: fadeUp 0.9s ease 0.5s forwards;
+    }
+    .hero-headline em { font-style: italic; color: var(--warm-cream); }
+    .hero-headline .accent-word {
+      background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold-light) 50%, var(--gold-bright) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; font-style: italic;
+    }
+
+    .hero-sub {
+      font-size: clamp(1.05rem, 2vw, 1.35rem);
+      font-weight: 400; font-style: italic;
+      color: var(--warm-tan); max-width: 44ch;
+      line-height: 1.7; margin-top: 2.5rem;
+      opacity: 0; animation: fadeUp 0.9s ease 0.75s forwards;
+    }
+
+    .hero-cta-row {
+      display: flex; align-items: center; gap: 2.5rem;
+      margin-top: 3.5rem;
+      opacity: 0; animation: fadeUp 0.9s ease 1s forwards;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      padding: 0.95rem 2.6rem;
+      background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold-light) 50%, var(--gold-bright) 100%);
+      background-size: 200% 200%;
+      color: var(--navy-deep);
+      font-family: 'Playfair Display', serif;
+      font-size: 0.95rem; font-weight: 500;
+      letter-spacing: 0.1em;
+      text-decoration: none; border: none; cursor: none;
+      transition: background-position 0.4s ease, transform 0.2s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 24px rgba(212,168,67,0.3);
+    }
+    .btn-primary:hover {
+      background-position: right center;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 36px rgba(212,168,67,0.45);
+    }
+
+    .hero-note {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem; letter-spacing: 0.12em;
+      color: var(--navy-muted);
+    }
+
+    /* ─── MARQUEE ─── */
+    .marquee-wrap {
+      width: 100%; overflow: hidden;
+      border-top: 1px solid rgba(212,168,67,0.18);
+      border-bottom: 1px solid rgba(212,168,67,0.18);
+      padding: 1rem 0;
+      background: rgba(26,37,64,0.3);
+    }
+    .marquee-track {
+      display: flex; gap: 3rem;
+      width: max-content;
+      animation: marquee 28s linear infinite;
+    }
+    .marquee-item {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.28em;
+      color: var(--gold-dim); text-transform: uppercase;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .marquee-dot { color: var(--gold-bright); margin: 0 0.5rem; }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .hiw-section { padding: 7rem 3rem; position: relative; }
+
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.38em;
+      color: var(--gold-bright); text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: clamp(2.2rem, 4vw, 3.8rem);
+      font-weight: 400; line-height: 1.1;
+      color: var(--warm-white); max-width: 20ch;
+      margin-bottom: 5rem;
+    }
+    .section-title em { font-style: italic; color: var(--warm-tan); }
+
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border: 1px solid rgba(212,168,67,0.15);
+    }
+
+    .step {
+      padding: 3rem 2.5rem;
+      border-right: 1px solid rgba(212,168,67,0.15);
+      position: relative; overflow: hidden;
+      transition: background 0.4s ease;
+    }
+    .step:last-child { border-right: none; }
+    .step::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(212,168,67,0.06) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.4s ease;
+    }
+    .step:hover::before { opacity: 1; }
+
+    .step-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 4.5rem; font-weight: 400;
+      color: rgba(212,168,67,0.1);
+      line-height: 1; margin-bottom: 1.5rem;
+      font-style: italic;
+      transition: color 0.4s ease;
+    }
+    .step:hover .step-num { color: rgba(212,168,67,0.28); }
+
+    .step-icon {
+      width: 40px; height: 40px;
+      margin-bottom: 1.5rem; color: var(--gold-bright);
+    }
+
+    .step-title {
+      font-size: 1.5rem; font-weight: 400;
+      color: var(--warm-white); margin-bottom: 1rem;
+      font-style: italic;
+    }
+
+    .step-desc {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 0.9rem; font-weight: 400;
+      color: var(--warm-tan); line-height: 1.85;
+    }
+
+    .step-line {
+      position: absolute; bottom: 0; left: 0;
+      height: 2px; width: 0;
+      background: linear-gradient(90deg, var(--gold-bright), var(--gold-light));
+      transition: width 0.5s ease;
+    }
+    .step:hover .step-line { width: 100%; }
+
+    /* ─── LETTER PREVIEW ─── */
+    .letter-section {
+      padding: 5rem 3rem 7rem;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 5rem; align-items: center;
+    }
+
+    .letter-text-block h2 {
+      font-size: clamp(2rem, 3.5vw, 3.2rem);
+      font-weight: 400; line-height: 1.15;
+      color: var(--warm-white); margin-bottom: 1.5rem;
+    }
+    .letter-text-block h2 em { font-style: italic; color: var(--warm-tan); }
+    .letter-text-block p {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1rem; font-weight: 400;
+      color: var(--warm-tan); line-height: 1.85;
+      font-style: italic; max-width: 40ch;
+    }
+
+    /* Paper letter card */
+    .letter-card {
+      background: var(--warm-cream);
+      color: var(--ink); padding: 3rem;
+      position: relative;
+      box-shadow:
+        0 2px 4px rgba(0,0,0,0.12),
+        0 8px 30px rgba(0,0,0,0.2),
+        0 0 60px rgba(212,168,67,0.08);
+      transform: rotate(1.5deg);
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      border-top: 3px solid var(--gold-bright);
+    }
+    .letter-card:hover {
+      transform: rotate(0deg) translateY(-5px);
+      box-shadow: 0 12px 50px rgba(0,0,0,0.25), 0 0 80px rgba(212,168,67,0.14);
+    }
+
+    .letter-card::before {
+      content: '';
+      position: absolute; inset: 3rem;
+      background-image: repeating-linear-gradient(
+        transparent, transparent 27px,
+        rgba(11,15,26,0.07) 27px, rgba(11,15,26,0.07) 28px
+      );
+      pointer-events: none;
+    }
+
+    .letter-to {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.28em;
+      color: var(--gold-dim); text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .letter-body {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 0.9rem; line-height: 2;
+      color: var(--ink); position: relative; z-index: 1;
+    }
+    .letter-body strong { font-style: italic; font-weight: 400; }
+
+    .letter-sig {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem; font-style: italic;
+      color: var(--gold-dim); margin-top: 1.5rem;
+      position: relative; z-index: 1;
+    }
+
+    .letter-date-badge {
+      position: absolute; top: -1rem; right: 1.5rem;
+      background: var(--gold-bright);
+      color: var(--navy-deep);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.52rem; letter-spacing: 0.2em;
+      padding: 0.4rem 0.9rem; text-transform: uppercase;
+      font-weight: 400;
+    }
+
+    .letter-stamp {
+      position: absolute; bottom: 1.5rem; right: 1.5rem;
+      width: 52px; height: 52px;
+      border: 1.5px solid rgba(212,168,67,0.45);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.42rem; letter-spacing: 0.1em;
+      color: var(--gold-dim); text-align: center; line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    /* ─── MANIFESTO ─── */
+    .manifesto {
+      padding: 6rem 3rem; text-align: center;
+      border-top: 1px solid rgba(212,168,67,0.12);
+      border-bottom: 1px solid rgba(212,168,67,0.12);
+      background: rgba(26,37,64,0.2);
+      position: relative; overflow: hidden;
+    }
+    .manifesto::before {
+      content: '"';
+      position: absolute; top: -2rem; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Playfair Display', serif;
+      font-size: 20rem;
+      color: rgba(212,168,67,0.04);
+      line-height: 1; pointer-events: none;
+    }
+
+    .manifesto blockquote {
+      font-size: clamp(1.6rem, 3vw, 2.8rem);
+      font-weight: 400; font-style: italic;
+      line-height: 1.4; color: var(--warm-white);
+      max-width: 28ch; margin: 0 auto 1.5rem;
+      position: relative; z-index: 1;
+    }
+    /* Gold underline on quote */
+    .manifesto blockquote::after {
+      content: '';
+      display: block; width: 60px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+      margin: 1.5rem auto 0;
+    }
+
+    .manifesto cite {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.3em;
+      color: var(--gold-dim); text-transform: uppercase;
+      font-style: normal;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 4rem 3rem;
+      display: flex; justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px solid rgba(212,168,67,0.12);
+    }
+
+    .footer-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 400; font-style: italic;
+      color: var(--gold-light); letter-spacing: 0.05em;
+    }
+    .footer-brand small {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.52rem; letter-spacing: 0.25em;
+      color: var(--navy-muted); font-style: normal;
+      text-transform: uppercase; margin-top: 0.4rem;
+    }
+
+    .footer-links { display: flex; gap: 2rem; list-style: none; }
+    .footer-links a {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.2em;
+      color: var(--navy-muted); text-transform: uppercase;
+      text-decoration: none; transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--gold-light); }
+
+    .footer-copy {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.52rem; letter-spacing: 0.15em;
+      color: var(--navy-muted);
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .reveal {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      nav { padding: 1.2rem 1.5rem; }
+      .hero { padding: 7rem 1.5rem 4rem; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .step { border-right: none; border-bottom: 1px solid rgba(212,168,67,0.15); }
+      .step:last-child { border-bottom: none; }
+      .letter-section { grid-template-columns: 1fr; gap: 3rem; padding: 4rem 1.5rem; }
+      .letter-card { transform: none; }
+      .hiw-section { padding: 5rem 1.5rem; }
+      .manifesto { padding: 4rem 1.5rem; }
+      footer { flex-direction: column; gap: 2rem; align-items: flex-start; padding: 3rem 1.5rem; }
+      .envelope-float { display: none; }
+    }
+    /* Auth Modal */
+    .auth-overlay {
+      position: fixed; inset: 0; background: rgba(9,16,30,0.98);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.4s;
+    }
+    .auth-overlay.active { opacity: 1; pointer-events: all; }
+    .auth-card {
+      width: 100%; max-width: 400px; padding: 3rem;
+      background: var(--navy-card); border: 1px solid rgba(212,168,67,0.2);
+      text-align: center;
+    }
+    .auth-input {
+      width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(212,168,67,0.2); color: var(--warm-white);
+      font-family: 'DM Mono', monospace; margin-bottom: 1.5rem; outline: none;
+    }
+    .auth-input:focus { border-color: var(--gold-bright); }
+    .btn-auth {
+      width: 100%; padding: 1.1rem; background: var(--gold-bright);
+      color: var(--navy-deep); border: none; font-family: 'Playfair Display', serif;
+      font-weight: 500; cursor: none; transition: 0.3s; width: 100%;
+    }
+    .btn-auth:hover { background: var(--gold-light); transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">Futur<span>ely</span></a>
+    <span class="nav-tag">futurely.unbeated.com</span>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-ring-1"></div>
+    <div class="hero-ring-2"></div>
+
+    <p class="hero-eyebrow">A letter. A future. A promise.</p>
+    <h1 class="hero-headline">
+      Write today.<br>
+      Be heard <em class="accent-word">tomorrow.</em>
+    </h1>
+    <p class="hero-sub">
+      Send letters across time — to your future self, to people you love,
+      to moments not yet lived. Delivered when the time is right.
+    </p>
+    <div class="hero-cta-row">
+      <div class="auth-triggers" style="display:flex; align-items:center; gap:2rem;">
+        <button onclick="openAuth()" class="btn-primary">Get Started</button>
+        <button onclick="openAuth()" class="hero-note" style="background:none; border:none; text-decoration:underline; cursor:none;">Sign In</button>
+      </div>
+    </div>
+
+    <!-- Envelope SVG -->
+    <div class="envelope-float">
+      <svg width="320" height="240" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="10" width="300" height="220" rx="4" stroke="#d4a843" stroke-width="1.5" fill="none"/>
+        <path d="M10 10 L160 130 L310 10" stroke="#d4a843" stroke-width="1.5" fill="none"/>
+        <path d="M10 230 L120 130" stroke="#d4a843" stroke-width="1" fill="none" opacity="0.5"/>
+        <path d="M310 230 L200 130" stroke="#d4a843" stroke-width="1" fill="none" opacity="0.5"/>
+        <circle cx="220" cy="40" r="20" stroke="#e8c97a" stroke-width="1" fill="none" opacity="0.5"/>
+        <line x1="220" y1="28" x2="220" y2="52" stroke="#e8c97a" stroke-width="0.8" opacity="0.5"/>
+        <line x1="208" y1="40" x2="232" y2="40" stroke="#e8c97a" stroke-width="0.8" opacity="0.5"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-wrap">
+    <div class="marquee-track">
+      <span class="marquee-item">Write to your future self <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Letters delivered on your chosen date <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Memory vaults for the people you love <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Sealed until the moment arrives <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Time is a gift — so are your words <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Write to your future self <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Letters delivered on your chosen date <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Memory vaults for the people you love <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Sealed until the moment arrives <span class="marquee-dot">✦</span></span>
+      <span class="marquee-item">Time is a gift — so are your words <span class="marquee-dot">✦</span></span>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section class="hiw-section" id="how">
+    <p class="section-label reveal">How It Works</p>
+    <h2 class="section-title reveal">Three steps.<br><em>A lifetime of meaning.</em></h2>
+
+    <div class="steps-grid">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <svg class="step-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 32 L8 12 Q8 8 12 8 L28 8 Q32 8 32 12 L32 32" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <line x1="13" y1="16" x2="27" y2="16" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="13" y1="21" x2="27" y2="21" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="13" y1="26" x2="21" y2="26" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <path d="M6 32 L34 32" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+        <h3 class="step-title">Write your letter</h3>
+        <p class="step-desc">Pour your heart onto the page. Write to yourself five years from now, to your child on their wedding day, or to a friend who needs to hear your words at just the right moment.</p>
+        <div class="step-line"></div>
+      </div>
+
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <svg class="step-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="13" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <path d="M20 10 L20 20 L27 26" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="1.5" fill="currentColor"/>
+        </svg>
+        <h3 class="step-title">Choose the moment</h3>
+        <p class="step-desc">Pick an exact date — a birthday, an anniversary, a decade from today. Your letter stays sealed in our vault, untouched, until that day arrives.</p>
+        <div class="step-line"></div>
+      </div>
+
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <svg class="step-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 20 L18 8 L34 8 L34 32 L18 32 Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <path d="M6 20 L18 20 L18 32" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <line x1="22" y1="16" x2="30" y2="16" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="22" y1="21" x2="30" y2="21" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="22" y1="26" x2="28" y2="26" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+        </svg>
+        <h3 class="step-title">It arrives — perfectly</h3>
+        <p class="step-desc">On the chosen date, Futurely delivers your letter exactly as written. No edits, no fading memory — just your words, arriving like a gift from the past.</p>
+        <div class="step-line"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LETTER PREVIEW -->
+  <section class="letter-section">
+    <div class="letter-text-block reveal">
+      <p class="section-label">What a letter looks like</p>
+      <h2>Your words,<br><em>preserved in time.</em></h2>
+      <p>Every letter is sealed the moment you send it. Beautifully formatted, held safely, and delivered with care — as if written and posted on a day that hasn't happened yet.</p>
+    </div>
+
+    <div class="letter-card reveal">
+      <div class="letter-date-badge">Opens · Dec 25, 2030</div>
+      <p class="letter-to">Dear future me,</p>
+      <p class="letter-body">
+        I'm writing this on a quiet Tuesday in February.<br><br>
+        I want you to remember how <strong>uncertain</strong> everything felt right now — and how you kept going anyway. You were braver than you knew.<br><br>
+        I hope the thing you were most afraid of has either happened and passed, or never came at all. Either way — you're still here. That's everything.
+      </p>
+      <p class="letter-sig">— You, from before</p>
+      <div class="letter-stamp">Futurely<br>Sealed<br>2025</div>
+    </div>
+  </section>
+
+  <!-- MANIFESTO -->
+  <section class="manifesto">
+    <blockquote class="reveal">
+      "The present moment always will have been."
+    </blockquote>
+    <cite class="reveal">— The quiet truth behind every letter sent through Futurely</cite>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">
+      Futurely
+      <small>futurely.unbeated.com &nbsp;·&nbsp; part of unbeated.com</small>
+    </div>
+    <ul class="footer-links">
+      <li><a href="#">About</a></li>
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+    <span class="footer-copy">© 2025 Futurely. All rights reserved.</span>
+  </footer>
+
+  <!-- AUTH OVERLAY -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card" id="authEmailStep">
+      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">Enter your email to enter</p>
+      <input type="email" class="auth-input" id="authEmail" placeholder="your@email.com">
+      <button class="btn-auth" onclick="requestPin()">Request Access Pin</button>
+      <p class="hero-note" style="margin-top:1.5rem; cursor:pointer;" onclick="closeAuth()">Close</p>
+    </div>
+    <div class="auth-card" id="authPinStep" style="display:none;">
+      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">Enter the 6-digit pin</p>
+      <input type="text" class="auth-input" id="authPin" placeholder="123456" maxlength="6">
+      <button class="btn-auth" onclick="verifyPin()">Open the Vault</button>
+      <p class="hero-note" style="margin-top:1.5rem; cursor:pointer;" onclick="showEmailStep()">← Back</p>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    const auth = window.FuturelyAuth;
+
+    // --- Dynamic Nav & Hero ---
+    function updateUI() {
+      if (auth.isLoggedIn()) {
+        const ctaRow = document.querySelector('.hero-cta-row');
+        ctaRow.innerHTML = `
+          <a href="futurely-composer.html" class="btn-primary">Write a New Letter</a>
+          <a href="futurely-vault.html" class="hero-note" style="text-decoration:underline;">Dashboard →</a>
+        `;
+        document.querySelector('.nav-tag').innerHTML = `<a href="futurely-vault.html" style="color:inherit; text-decoration:none;">Dashboard</a>`;
+      }
+    }
+    updateUI();
+
+    // --- Auth Logic ---
+    function openAuth() {
+      document.getElementById('authOverlay').classList.add('active');
+    }
+    function closeAuth() {
+      document.getElementById('authOverlay').classList.remove('active');
+    }
+
+    async function requestPin() {
+      const email = document.getElementById('authEmail').value.trim();
+      const btn = document.querySelector('#authEmailStep .btn-auth');
+      if (!email) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      const res = await auth.requestPin(email);
+      if (res.success) {
+        document.getElementById('authEmailStep').style.display = 'none';
+        document.getElementById('authPinStep').style.display = 'block';
+      } else {
+        alert(res.error || 'Failed to send pin');
+        btn.disabled = false;
+        btn.textContent = 'Request Access Pin';
+      }
+    }
+
+    async function verifyPin() {
+      const email = document.getElementById('authEmail').value.trim();
+      const pin = document.getElementById('authPin').value.trim();
+      const btn = document.querySelector('#authPinStep .btn-auth');
+      if (!pin) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+
+      const res = await auth.verifyPin(email, pin);
+      if (res.success) {
+        window.location.href = 'futurely-vault.html';
+      } else {
+        alert(res.error || 'Invalid pin');
+        btn.disabled = false;
+        btn.textContent = 'Open the Vault';
+      }
+    }
+
+    function showEmailStep() {
+      document.getElementById('authEmailStep').style.display = 'block';
+      document.getElementById('authPinStep').style.display = 'none';
+    }
+
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function animateCursor() {
+      cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+      rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
+
+    const reveals = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 80);
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    reveals.forEach(el => io.observe(el));
+  </script>
+</body>
+</html>
