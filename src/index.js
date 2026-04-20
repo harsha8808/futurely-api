@@ -33,29 +33,25 @@ const error = (msg, status = 400) => json({ success: false, error: msg }, status
 const ok    = (data)              => json({ success: true, ...data });
 
 function getCorsHeaders(request, env) {
-  const origin = request.headers.get('Origin') || '';
-  const allowed = env.CORS_ORIGIN || 'https://futurely.unbeated.com';
+  const origin = request.headers.get('Origin') || '*';
   
-  // More robust origin check
-  const isAllowed = origin === allowed || 
-                    origin.includes('unbeated.com') || 
-                    origin.includes('localhost') || 
-                    origin.includes('127.0.0.1');
-
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : allowed,
+    'Access-Control-Allow-Origin': '*', // Permissive for debugging
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin'
   };
 }
 
 function applyCors(response, request, env) {
-  const newResponse = new Response(response.body, response);
+  const headers = new Headers(response.headers);
   const cors = getCorsHeaders(request, env);
-  Object.entries(cors).forEach(([k, v]) => newResponse.headers.set(k, v));
-  return newResponse;
+  Object.entries(cors).forEach(([k, v]) => headers.set(k, v));
+  return new Response(response.body, { 
+    status: response.status, 
+    statusText: response.statusText, 
+    headers 
+  });
 }
 
 // ─── Router ──────────────────────────────────────────────────
@@ -70,7 +66,7 @@ export default {
     console.log(`[Worker] ${method} ${path} (Origin: ${origin})`);
 
     if (method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: getCorsHeaders(request, env) });
+      return new Response(null, { status: 200, headers: getCorsHeaders(request, env) });
     }
 
     // Safety Check for DB
