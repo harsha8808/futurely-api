@@ -10,18 +10,18 @@
 
   <style>
     :root {
-      --navy-deep:    #0b0f1a;
-      --navy-mid:     #111827;
-      --navy-soft:    #1a2540;
-      --navy-muted:   #2a3a5c;
-      --gold-bright:  #d4a843;
-      --gold-light:   #e8c97a;
-      --gold-pale:    #f5e4b0;
-      --gold-dim:     #8a6a28;
-      --warm-white:   #fdf8ee;
-      --warm-cream:   #f5ead6;
-      --warm-tan:     #c4a97a;
-      --ink:          #0b0f1a;
+      --navy-deep:    #ffffff;
+      --navy-mid:     #f8fafc;
+      --navy-soft:    #f1f5f9;
+      --navy-muted:   #94a3b8;
+      --gold-bright:  #3b82f6;
+      --gold-light:   #60a5fa;
+      --gold-pale:    #dbeafe;
+      --gold-dim:     #2563eb;
+      --warm-white:   #1e293b;
+      --warm-cream:   #334155;
+      --warm-tan:     #64748b;
+      --ink:          #0f172a;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -62,7 +62,7 @@
       content: '';
       position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
-      pointer-events: none; z-index: 100; opacity: 0.7;
+      pointer-events: none; z-index: 100; opacity: 0.3;
     }
 
     /* Gold shimmer line at very top */
@@ -73,7 +73,7 @@
       height: 2px;
       background: linear-gradient(90deg, transparent, var(--gold-bright), var(--gold-light), var(--gold-bright), transparent);
       z-index: 200;
-      opacity: 0.8;
+      opacity: 0.3;
     }
 
     /* ─── NAV ─── */
@@ -84,7 +84,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: linear-gradient(to bottom, rgba(11,15,26,0.98) 0%, transparent 100%);
+      background: linear-gradient(to bottom, rgba(255,255,255,0.98) 0%, transparent 100%);
     }
     .nav-logo {
       font-family: 'Playfair Display', serif;
@@ -116,7 +116,7 @@
       transform: translateY(-50%);
       width: 55vw; height: 55vw;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(212,168,67,0.07) 0%, rgba(212,168,67,0.03) 40%, transparent 70%);
+      background: radial-gradient(circle, rgba(59,130,246,0.05) 0%, rgba(59,130,246,0.02) 40%, transparent 70%);
       pointer-events: none;
     }
 
@@ -125,14 +125,14 @@
       position: absolute; right: -8vw; top: 50%;
       transform: translateY(-50%);
       width: 62vw; height: 62vw; border-radius: 50%;
-      border: 1px solid rgba(212,168,67,0.1);
+      border: 1px solid rgba(59,130,246,0.08);
       pointer-events: none;
     }
     .hero-ring-2 {
       position: absolute; right: -2vw; top: 50%;
       transform: translateY(-50%);
       width: 46vw; height: 46vw; border-radius: 50%;
-      border: 1px solid rgba(212,168,67,0.07);
+      border: 1px solid rgba(59,130,246,0.04);
       pointer-events: none;
     }
 
@@ -140,7 +140,7 @@
     .envelope-float {
       position: absolute; right: 12vw; top: 50%;
       transform: translateY(-50%);
-      opacity: 0.22;
+      opacity: 0.15;
       animation: floatEnvelope 6s ease-in-out infinite;
     }
     @keyframes floatEnvelope {
@@ -216,7 +216,7 @@
       border-top: 1px solid rgba(212,168,67,0.18);
       border-bottom: 1px solid rgba(212,168,67,0.18);
       padding: 1rem 0;
-      background: rgba(26,37,64,0.3);
+      background: rgba(241,245,249,0.5);
     }
     .marquee-track {
       display: flex; gap: 3rem;
@@ -404,7 +404,7 @@
       padding: 6rem 3rem; text-align: center;
       border-top: 1px solid rgba(212,168,67,0.12);
       border-bottom: 1px solid rgba(212,168,67,0.12);
-      background: rgba(26,37,64,0.2);
+      background: rgba(241,245,249,0.3);
       position: relative; overflow: hidden;
     }
     .manifesto::before {
@@ -502,19 +502,20 @@
     }
     /* Auth Modal */
     .auth-overlay {
-      position: fixed; inset: 0; background: rgba(9,16,30,0.98);
+      position: fixed; inset: 0; background: rgba(255,255,255,0.98);
       z-index: 1000; display: flex; align-items: center; justify-content: center;
       opacity: 0; pointer-events: none; transition: opacity 0.4s;
     }
     .auth-overlay.active { opacity: 1; pointer-events: all; }
     .auth-card {
       width: 100%; max-width: 400px; padding: 3rem;
-      background: var(--navy-card); border: 1px solid rgba(212,168,67,0.2);
+      background: var(--navy-deep); border: 1px solid rgba(59,130,246,0.2);
       text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.05);
     }
     .auth-input {
-      width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(212,168,67,0.2); color: var(--warm-white);
+      width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.02);
+      border: 1px solid #cbd5e1; color: var(--warm-white);
       font-family: 'DM Mono', monospace; margin-bottom: 1.5rem; outline: none;
     }
     .auth-input:focus { border-color: var(--gold-bright); }
@@ -524,6 +525,60 @@
       font-weight: 500; cursor: none; transition: 0.3s; width: 100%;
     }
     .btn-auth:hover { background: var(--gold-light); transform: translateY(-2px); }
+    /* Auth error message */
+    .auth-error {
+      color: #e05c5c;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      min-height: 1.4rem;
+      margin-top: -1rem;
+      margin-bottom: 1rem;
+      text-align: left;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .auth-error.visible { opacity: 1; }
+
+    /* PIN countdown timer */
+    .auth-timer {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      color: var(--gold-dim);
+      margin-bottom: 1.2rem;
+      text-align: center;
+    }
+    .auth-timer span { color: var(--gold-bright); }
+
+    /* Resend link */
+    .auth-resend {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      color: var(--navy-muted);
+      text-align: center;
+      margin-top: 1rem;
+      cursor: none;
+    }
+    .auth-resend button {
+      background: none; border: none; padding: 0;
+      color: var(--gold-dim); text-decoration: underline;
+      font-family: inherit; font-size: inherit;
+      letter-spacing: inherit; cursor: none;
+      transition: color 0.2s;
+    }
+    .auth-resend button:hover { color: var(--gold-bright); }
+
+    /* Shake animation for wrong PIN */
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-5px); }
+      80%      { transform: translateX(5px); }
+    }
+    .shake { animation: shake 0.4s ease; }
   </style>
 </head>
 <body>
@@ -562,13 +617,13 @@
     <!-- Envelope SVG -->
     <div class="envelope-float">
       <svg width="320" height="240" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="10" y="10" width="300" height="220" rx="4" stroke="#d4a843" stroke-width="1.5" fill="none"/>
-        <path d="M10 10 L160 130 L310 10" stroke="#d4a843" stroke-width="1.5" fill="none"/>
-        <path d="M10 230 L120 130" stroke="#d4a843" stroke-width="1" fill="none" opacity="0.5"/>
-        <path d="M310 230 L200 130" stroke="#d4a843" stroke-width="1" fill="none" opacity="0.5"/>
-        <circle cx="220" cy="40" r="20" stroke="#e8c97a" stroke-width="1" fill="none" opacity="0.5"/>
-        <line x1="220" y1="28" x2="220" y2="52" stroke="#e8c97a" stroke-width="0.8" opacity="0.5"/>
-        <line x1="208" y1="40" x2="232" y2="40" stroke="#e8c97a" stroke-width="0.8" opacity="0.5"/>
+        <rect x="10" y="10" width="300" height="220" rx="4" stroke="currentColor" stroke-width="1.5" fill="none" style="color:var(--gold-bright);"/>
+        <path d="M10 10 L160 130 L310 10" stroke="currentColor" stroke-width="1.5" fill="none" style="color:var(--gold-bright);"/>
+        <path d="M10 230 L120 130" stroke="currentColor" stroke-width="1" fill="none" opacity="0.3" style="color:var(--gold-bright);"/>
+        <path d="M310 230 L200 130" stroke="currentColor" stroke-width="1" fill="none" opacity="0.3" style="color:var(--gold-bright);"/>
+        <circle cx="220" cy="40" r="20" stroke="currentColor" stroke-width="1" fill="none" opacity="0.3" style="color:var(--gold-light);"/>
+        <line x1="220" y1="28" x2="220" y2="52" stroke="currentColor" stroke-width="0.8" opacity="0.3" style="color:var(--gold-light);"/>
+        <line x1="208" y1="40" x2="232" y2="40" stroke="currentColor" stroke-width="0.8" opacity="0.3" style="color:var(--gold-light);"/>
       </svg>
     </div>
   </section>
@@ -682,18 +737,51 @@
 
   <!-- AUTH OVERLAY -->
   <div class="auth-overlay" id="authOverlay">
+
+    <!-- STEP 1: Email -->
     <div class="auth-card" id="authEmailStep">
-      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">Enter your email to enter</p>
-      <input type="email" class="auth-input" id="authEmail" placeholder="your@email.com">
-      <button class="btn-auth" onclick="requestPin()">Request Access Pin</button>
+      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">
+        Enter your email to enter
+      </p>
+      <input
+        type="email"
+        class="auth-input"
+        id="authEmail"
+        placeholder="your@email.com"
+        autocomplete="email"
+        onkeydown="if(event.key==='Enter') requestPin()"
+      >
+      <div class="auth-error" id="emailError"></div>
+      <button class="btn-auth" id="emailBtn" onclick="requestPin()">Request Access Pin</button>
       <p class="hero-note" style="margin-top:1.5rem; cursor:pointer;" onclick="closeAuth()">Close</p>
     </div>
+
+    <!-- STEP 2: PIN -->
     <div class="auth-card" id="authPinStep" style="display:none;">
-      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">Enter the 6-digit pin</p>
-      <input type="text" class="auth-input" id="authPin" placeholder="123456" maxlength="6">
-      <button class="btn-auth" onclick="verifyPin()">Open the Vault</button>
-      <p class="hero-note" style="margin-top:1.5rem; cursor:pointer;" onclick="showEmailStep()">← Back</p>
+      <p class="sidebar-section-title" style="margin-bottom:0.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">
+        Enter the 6-digit pin
+      </p>
+      <div class="auth-timer" id="pinTimer">Pin expires in <span id="pinCountdown">10:00</span></div>
+      <p class="hero-note" style="margin-bottom:1.2rem; opacity:0.6; font-size:0.5rem;">(Don't see it? Check your spam folder)</p>
+      <input
+        type="text"
+        class="auth-input"
+        id="authPin"
+        placeholder="123456"
+        maxlength="6"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        onkeydown="if(event.key==='Enter') verifyPin()"
+      >
+      <div class="auth-error" id="pinError"></div>
+      <button class="btn-auth" id="pinBtn" onclick="verifyPin()">Open the Vault</button>
+      <div class="auth-resend">
+        Didn't get it?
+        <button onclick="resendPin()" id="resendBtn">Resend Pin</button>
+      </div>
+      <p class="hero-note" style="margin-top:1rem; cursor:pointer;" onclick="showEmailStep()">← Back</p>
     </div>
+
   </div>
 
   <script src="auth.js"></script>
@@ -716,52 +804,187 @@
     // --- Auth Logic ---
     function openAuth() {
       document.getElementById('authOverlay').classList.add('active');
+      setTimeout(() => document.getElementById('authEmail').focus(), 300);
     }
     function closeAuth() {
       document.getElementById('authOverlay').classList.remove('active');
+      clearError('emailError');
+      clearError('pinError');
+      stopPinTimer();
     }
 
+    // ── Error helpers ─────────────────────────────────────────────
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      el.style.color = ''; // Reset to default (red)
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+    function clearError(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.color = '';
+      el.textContent = '';
+      el.classList.remove('visible');
+    }
+
+    // ── PIN countdown timer ───────────────────────────────────────
+    let _timerInterval = null;
+    function startPinTimer() {
+      stopPinTimer();
+      let secs = 10 * 60; // 10 min = 600 s
+      const el = document.getElementById('pinCountdown');
+      function tick() {
+        if (secs <= 0) {
+          el.textContent = '00:00';
+          stopPinTimer();
+          showError('pinError', 'Pin expired — please go back and request a new one.');
+          document.getElementById('pinBtn').disabled = true;
+          return;
+        }
+        const m = String(Math.floor(secs / 60)).padStart(2, '0');
+        const s = String(secs % 60).padStart(2, '0');
+        el.textContent = `${m}:${s}`;
+        secs--;
+      }
+      tick();
+      _timerInterval = setInterval(tick, 1000);
+    }
+    function stopPinTimer() {
+      if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+    }
+
+    // ── Step navigation ───────────────────────────────────────────
+    function showEmailStep() {
+      document.getElementById('authEmailStep').style.display = 'block';
+      document.getElementById('authPinStep').style.display   = 'none';
+      stopPinTimer();
+      clearError('pinError');
+      const pinBtn = document.getElementById('pinBtn');
+      pinBtn.disabled = false;
+      pinBtn.textContent = 'Open the Vault';
+    }
+    function showPinStep() {
+      document.getElementById('authEmailStep').style.display = 'none';
+      document.getElementById('authPinStep').style.display   = 'block';
+      document.getElementById('authPin').value = '';
+      document.getElementById('pinBtn').disabled = false;
+      document.getElementById('pinBtn').textContent = 'Open the Vault';
+      clearError('pinError');
+      startPinTimer();
+      setTimeout(() => document.getElementById('authPin').focus(), 100);
+    }
+
+    // ── Request PIN ───────────────────────────────────────────────
     async function requestPin() {
       const email = document.getElementById('authEmail').value.trim();
-      const btn = document.querySelector('#authEmailStep .btn-auth');
-      if (!email) return;
+      const btn   = document.getElementById('emailBtn');
+      clearError('emailError');
 
-      btn.disabled = true;
-      btn.textContent = 'Sending...';
+      if (!email) {
+        showError('emailError', 'Please enter your email address.');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('emailError', 'That doesn\'t look like a valid email.');
+        return;
+      }
 
-      const res = await auth.requestPin(email);
-      if (res.success) {
-        document.getElementById('authEmailStep').style.display = 'none';
-        document.getElementById('authPinStep').style.display = 'block';
-      } else {
-        alert(res.error || 'Failed to send pin');
-        btn.disabled = false;
+      btn.disabled    = true;
+      btn.textContent = 'Sending…';
+
+      try {
+        const res = await auth.requestPin(email);
+        if (res.success) {
+          showPinStep();
+        } else {
+          showError('emailError', res.error || 'Failed to send pin. Please try again.');
+          btn.disabled    = false;
+          btn.textContent = 'Request Access Pin';
+        }
+      } catch (e) {
+        showError('emailError', 'Network error — please check your connection.');
+        btn.disabled    = false;
         btn.textContent = 'Request Access Pin';
       }
     }
 
+    // ── Verify PIN ────────────────────────────────────────────────
     async function verifyPin() {
-      const email = document.getElementById('authEmail').value.trim();
-      const pin = document.getElementById('authPin').value.trim();
-      const btn = document.querySelector('#authPinStep .btn-auth');
-      if (!pin) return;
+      const email  = document.getElementById('authEmail').value.trim();
+      const pin    = document.getElementById('authPin').value.trim();
+      const btn    = document.getElementById('pinBtn');
+      const input  = document.getElementById('authPin');
+      clearError('pinError');
 
-      btn.disabled = true;
-      btn.textContent = 'Verifying...';
+      if (!pin) {
+        showError('pinError', 'Please enter the 6-digit pin from your email.');
+        return;
+      }
+      if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+        showError('pinError', 'Pin must be exactly 6 digits.');
+        input.classList.add('shake');
+        setTimeout(() => input.classList.remove('shake'), 500);
+        return;
+      }
 
-      const res = await auth.verifyPin(email, pin);
-      if (res.success) {
-        window.location.href = 'futurely-vault.html';
-      } else {
-        alert(res.error || 'Invalid pin');
-        btn.disabled = false;
+      btn.disabled    = true;
+      btn.textContent = 'Verifying…';
+
+      try {
+        const res = await auth.verifyPin(email, pin);
+        if (res.success) {
+          stopPinTimer();
+          window.location.href = 'futurely-vault.html';
+        } else {
+          const msg = res.error || 'Invalid or expired pin. Please try again.';
+          showError('pinError', msg);
+          input.value = '';
+          input.classList.add('shake');
+          setTimeout(() => input.classList.remove('shake'), 500);
+          btn.disabled    = false;
+          btn.textContent = 'Open the Vault';
+          setTimeout(() => input.focus(), 100);
+        }
+      } catch (e) {
+        showError('pinError', 'Network error — please check your connection.');
+        btn.disabled    = false;
         btn.textContent = 'Open the Vault';
       }
     }
 
-    function showEmailStep() {
-      document.getElementById('authEmailStep').style.display = 'block';
-      document.getElementById('authPinStep').style.display = 'none';
+    // ── Resend PIN ────────────────────────────────────────────────
+    async function resendPin() {
+      const email      = document.getElementById('authEmail').value.trim();
+      const resendBtn  = document.getElementById('resendBtn');
+      clearError('pinError');
+      resendBtn.disabled    = true;
+      resendBtn.textContent = 'Sending…';
+
+      try {
+        const res = await auth.requestPin(email);
+        if (res.success) {
+          showError('pinError', '✓ New pin sent to ' + email);
+          document.getElementById('pinError').style.color = 'var(--gold-dim)'; 
+          document.getElementById('pinBtn').disabled = false;
+          document.getElementById('pinBtn').textContent = 'Open the Vault';
+          setTimeout(() => {
+            const el = document.getElementById('pinError');
+            if (el && el.textContent.includes('✓')) {
+              clearError('pinError');
+            }
+          }, 4000);
+        } else {
+          showError('pinError', res.error || 'Failed to resend. Please try again.');
+        }
+      } catch(e) {
+        showError('pinError', 'Network error — please check your connection.');
+      }
+
+      setTimeout(() => {
+        resendBtn.disabled    = false;
+        resendBtn.textContent = 'Resend Pin';
+      }, 10000);
     }
 
     const cursor = document.getElementById('cursor');
