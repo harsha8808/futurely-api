@@ -33,13 +33,25 @@ const error = (msg, status = 400) => json({ success: false, error: msg }, status
 const ok    = (data)              => json({ success: true, ...data });
 
 function getCorsHeaders(request, env) {
-  const origin = request.headers.get('Origin') || '*';
+  const origin = request.headers.get('Origin');
+  
+  // Whitelist: Main site, pages.dev previews, and local development
+  const isAllowed = origin && (
+    origin === 'https://futurely.unbeated.com' ||
+    origin.endsWith('.futurely-unbeated.pages.dev') ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1')
+  );
+  
+  const corsOrigin = isAllowed ? origin : 'https://futurely.unbeated.com';
   
   return {
-    'Access-Control-Allow-Origin': '*', // Permissive for debugging
+    'Access-Control-Allow-Origin': corsOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin' // Important when using dynamic Origin
   };
 }
 
@@ -176,9 +188,11 @@ async function handleAuthRequest(request, env) {
           from:    env.FROM_EMAIL || 'Futurely <auth@futurely.unbeated.com>',
           to:      [email],
           subject: `✦ Your Futurely access code: ${pin}`,
-          html:    `<p>Your 6-digit access code for <strong>Futurely</strong> is:</p>
-                    <h1 style="letter-spacing:0.2em; color:#d4a843;">${pin}</h1>
-                    <p>It will expire in 10 minutes.</p>`
+          html:    `<div style="font-family:Georgia,serif; color:#0f172a; padding:20px; border-top:3px solid #3b82f6; background:#f8fafc;">
+                      <p>Your 6-digit access code for <strong>Futurely</strong> is:</p>
+                      <h1 style="letter-spacing:0.2em; color:#3b82f6;">${pin}</h1>
+                      <p style="font-size:0.9rem; color:#64748b;">It will expire in 10 minutes.</p>
+                    </div>`
         }),
       });
 
