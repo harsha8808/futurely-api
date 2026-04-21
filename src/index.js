@@ -515,7 +515,7 @@ async function sendViaTelegram(letter, env) {
     ``,
     `*Written:* ${letter.created_at?.slice(0,10)}`,
     `[futurely\\.unbeated\\.com](https://futurely.unbeated.com)`,
-  ].join('\n');
+  ].join('\\n');
 
   const res = await fetch(
     `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
