@@ -166,7 +166,7 @@ async function handleAuthRequest(request, env) {
   // Send Pin via Email
   if (env.RESEND_API_KEY) {
     try {
-      await fetch('https://api.resend.com/emails', {
+      const res = await fetch('https://api.resend.com/emails', {
         method:  'POST',
         headers: {
           'Authorization': `Bearer ${env.RESEND_API_KEY}`,
@@ -181,8 +181,13 @@ async function handleAuthRequest(request, env) {
                     <p>It will expire in 10 minutes.</p>`
         }),
       });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('[Auth] Resend API Error:', res.status, errorText);
+      }
     } catch (e) {
-      console.error('[Auth] Resend failed:', e.message);
+      console.error('[Auth] Fetch to Resend failed:', e.message);
     }
   }
 
@@ -224,7 +229,7 @@ async function createLetter(request, env, userId) {
   if (!body?.deliverOn) return error('deliverOn date is required');
 
   const deliverDate = new Date(body.deliverOn);
-  if (isNaN(deliverDate) || deliverDate <= new Date()) {
+  if (isNaN(deliverDate.getTime()) || deliverDate <= new Date()) {
     return error('deliverOn must be a future date');
   }
 
@@ -429,19 +434,19 @@ function buildEmailHTML(letter) {
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
-  body{background:#0b0f1a;margin:0;padding:40px 20px;font-family:Georgia,serif;}
+  body{background:#ffffff;margin:0;padding:40px 20px;font-family:Georgia,serif;}
   .wrap{max-width:600px;margin:0 auto;}
   .header{text-align:center;margin-bottom:32px;}
-  .logo{color:#d4a843;font-size:28px;font-style:italic;letter-spacing:0.1em;}
-  .tagline{color:#7a5f22;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;margin-top:6px;}
-  .gold-line{height:1px;background:linear-gradient(90deg,transparent,#d4a843,transparent);margin:20px 0;}
-  .paper{background:#f7f0e0;padding:48px 52px;border-top:3px solid #d4a843;}
-  .to-label{font-size:11px;letter-spacing:0.25em;color:#7a5f22;text-transform:uppercase;margin-bottom:20px;font-family:monospace;}
-  .body{font-size:16px;line-height:2.1;color:#1a1008;white-space:pre-wrap;}
-  .sig{font-size:20px;font-style:italic;color:#7a5f22;margin-top:28px;}
+  .logo{color:#3b82f6;font-size:28px;font-style:italic;letter-spacing:0.1em;}
+  .tagline{color:#2563eb;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;margin-top:6px;}
+  .gold-line{height:1px;background:linear-gradient(90deg,transparent,#3b82f6,transparent);margin:20px 0;}
+  .paper{background:#f8fafc;padding:48px 52px;border-top:3px solid #3b82f6;box-shadow:0 10px 30px rgba(0,0,0,0.05);}
+  .to-label{font-size:11px;letter-spacing:0.25em;color:#2563eb;text-transform:uppercase;margin-bottom:20px;font-family:monospace;}
+  .body{font-size:16px;line-height:2.1;color:#0f172a;white-space:pre-wrap;}
+  .sig{font-size:20px;font-style:italic;color:#2563eb;margin-top:28px;}
   .footer{text-align:center;margin-top:32px;}
-  .footer p{color:#2a3a5c;font-size:11px;letter-spacing:0.15em;font-family:monospace;text-transform:uppercase;}
-  .footer a{color:#7a5f22;text-decoration:none;}
+  .footer p{color:#94a3b8;font-size:11px;letter-spacing:0.15em;font-family:monospace;text-transform:uppercase;}
+  .footer a{color:#3b82f6;text-decoration:none;}
 </style>
 </head>
 <body>
