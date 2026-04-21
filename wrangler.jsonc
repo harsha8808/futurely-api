@@ -5,10 +5,27 @@
   "observability": {
     "enabled": true
   },
-  "assets": {
-    "directory": "Futurely-unbeated"
+  "vars": {
+    "ENVIRONMENT": "production",
+    "CORS_ORIGIN": "https://futurely.unbeated.com",
+    "FROM_EMAIL": "Futurely <letters@futurely.unbeated.com>"
   },
-  "compatibility_flags": [
-    "nodejs_compat"
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "futurely-db1",
+      "database_id": "2d2f6a6d-9bae-4e32-97f8-36c41ef8ccc5"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 8 * * *"
+    ]
+  },
+  "routes": [
+    {
+      "pattern": "api.futurely.unbeated.com/*",
+      "zone_name": "unbeated.com"
+    }
   ]
 }
