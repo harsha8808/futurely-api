@@ -610,7 +610,7 @@
     <div class="hero-cta-row">
       <div class="auth-triggers" style="display:flex; align-items:center; gap:2rem;">
         <button onclick="openAuth()" class="btn-primary">Get Started</button>
-        <button onclick="openAuth()" class="hero-note" style="background:none; border:none; text-decoration:underline; cursor:none;">Sign In</button>
+        <button onclick="openAuth()" class="hero-note" style="background:none; border:none; text-decoration:underline; cursor:none;">Sign Up</button>
       </div>
     </div>
 
@@ -738,48 +738,84 @@
   <!-- AUTH OVERLAY -->
   <div class="auth-overlay" id="authOverlay">
 
-    <!-- STEP 1: Email -->
-    <div class="auth-card" id="authEmailStep">
+    <!-- STEP 1: Login/Signup Choice -->
+    <div class="auth-card" id="authChoiceStep">
       <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">
-        Enter your email to enter
+        Welcome to Futurely
+      </p>
+      <button class="btn-auth" style="margin-bottom:1rem;" onclick="showPasswordLoginStep()">Sign In</button>
+      <button class="btn-auth" style="margin-bottom:1rem; background:transparent; border:1px solid var(--gold-bright); color:var(--gold-bright);" onclick="showSignupStep()">Sign Up</button>
+      <p class="hero-note" style="margin-top:1.5rem; cursor:pointer;" onclick="closeAuth()">Close</p>
+    </div>
+
+    <!-- STEP 2: Password Login -->
+    <div class="auth-card" id="authPasswordStep" style="display:none;">
+      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">
+        Sign in to your account
       </p>
       <input
         type="email"
         class="auth-input"
-        id="authEmail"
+        id="passwordEmail"
         placeholder="your@email.com"
         autocomplete="email"
-        onkeydown="if(event.key==='Enter') requestPin()"
+        style="margin-bottom:1rem;"
+        onkeydown="if(event.key==='Enter') passwordLogin()"
       >
-      <div class="auth-error" id="emailError"></div>
-      <button class="btn-auth" id="emailBtn" onclick="requestPin()">Request Access Pin</button>
-      <p class="hero-note" style="margin-top:1.5rem; cursor:pointer;" onclick="closeAuth()">Close</p>
+      <input
+        type="password"
+        class="auth-input"
+        id="passwordPassword"
+        placeholder="Your password"
+        autocomplete="current-password"
+        style="margin-bottom:1.5rem;"
+        onkeydown="if(event.key==='Enter') passwordLogin()"
+      >
+      <div class="auth-error" id="passwordError"></div>
+      <button class="btn-auth" id="passwordBtn" onclick="passwordLogin()">Sign In</button>
+      <p class="hero-note" style="margin-top:1rem; cursor:pointer;" onclick="showChoiceStep()">← Back</p>
     </div>
 
-    <!-- STEP 2: PIN -->
-    <div class="auth-card" id="authPinStep" style="display:none;">
-      <p class="sidebar-section-title" style="margin-bottom:0.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">
-        Enter the 6-digit pin
+    <!-- STEP 3: Signup Form -->
+    <div class="auth-card" id="authSignupStep" style="display:none;">
+      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">
+        Create your account
       </p>
-      <div class="auth-timer" id="pinTimer">Pin expires in <span id="pinCountdown">10:00</span></div>
-      <p class="hero-note" style="margin-bottom:1.2rem; opacity:0.6; font-size:0.5rem;">(Don't see it? Check your spam folder)</p>
       <input
         type="text"
         class="auth-input"
-        id="authPin"
-        placeholder="123456"
-        maxlength="6"
-        inputmode="numeric"
-        pattern="[0-9]*"
-        onkeydown="if(event.key==='Enter') verifyPin()"
+        id="signupName"
+        placeholder="Your name (optional)"
+        autocomplete="name"
+        style="margin-bottom:1rem;"
       >
-      <div class="auth-error" id="pinError"></div>
-      <button class="btn-auth" id="pinBtn" onclick="verifyPin()">Open the Vault</button>
-      <div class="auth-resend">
-        Didn't get it?
-        <button onclick="resendPin()" id="resendBtn">Resend Pin</button>
-      </div>
-      <p class="hero-note" style="margin-top:1rem; cursor:pointer;" onclick="showEmailStep()">← Back</p>
+      <input
+        type="email"
+        class="auth-input"
+        id="signupEmail"
+        placeholder="your@email.com"
+        autocomplete="email"
+        style="margin-bottom:1rem;"
+      >
+      <input
+        type="password"
+        class="auth-input"
+        id="signupPassword"
+        placeholder="Create a password"
+        autocomplete="new-password"
+        style="margin-bottom:1rem;"
+      >
+      <input
+        type="password"
+        class="auth-input"
+        id="signupConfirmPassword"
+        placeholder="Confirm password"
+        autocomplete="new-password"
+        style="margin-bottom:1.5rem;"
+      >
+      <div class="auth-error" id="signupError"></div>
+      <button class="btn-auth" id="signupBtn" onclick="signup()">Create Account</button>
+      <p class="hero-note" style="margin-top:1rem; cursor:pointer;" onclick="showChoiceStep()">← Back to Sign In</p>
     </div>
 
   </div>
@@ -804,7 +840,7 @@
     // --- Auth Logic ---
     function openAuth() {
       document.getElementById('authOverlay').classList.add('active');
-      setTimeout(() => document.getElementById('authEmail').focus(), 300);
+      showChoiceStep();
     }
     function closeAuth() {
       document.getElementById('authOverlay').classList.remove('active');
@@ -828,163 +864,121 @@
       el.classList.remove('visible');
     }
 
-    // ── PIN countdown timer ───────────────────────────────────────
-    let _timerInterval = null;
-    function startPinTimer() {
-      stopPinTimer();
-      let secs = 10 * 60; // 10 min = 600 s
-      const el = document.getElementById('pinCountdown');
-      function tick() {
-        if (secs <= 0) {
-          el.textContent = '00:00';
-          stopPinTimer();
-          showError('pinError', 'Pin expired — please go back and request a new one.');
-          document.getElementById('pinBtn').disabled = true;
-          return;
-        }
-        const m = String(Math.floor(secs / 60)).padStart(2, '0');
-        const s = String(secs % 60).padStart(2, '0');
-        el.textContent = `${m}:${s}`;
-        secs--;
-      }
-      tick();
-      _timerInterval = setInterval(tick, 1000);
-    }
-    function stopPinTimer() {
-      if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
-    }
 
     // ── Step navigation ───────────────────────────────────────────
-    function showEmailStep() {
-      document.getElementById('authEmailStep').style.display = 'block';
-      document.getElementById('authPinStep').style.display   = 'none';
-      stopPinTimer();
-      clearError('pinError');
-      const pinBtn = document.getElementById('pinBtn');
-      pinBtn.disabled = false;
-      pinBtn.textContent = 'Open the Vault';
+    function showChoiceStep() {
+      document.getElementById('authChoiceStep').style.display = 'block';
+      document.getElementById('authPasswordStep').style.display = 'none';
+      document.getElementById('authSignupStep').style.display = 'none';
+      clearError('passwordError');
+      clearError('signupError');
     }
-    function showPinStep() {
-      document.getElementById('authEmailStep').style.display = 'none';
-      document.getElementById('authPinStep').style.display   = 'block';
-      document.getElementById('authPin').value = '';
-      document.getElementById('pinBtn').disabled = false;
-      document.getElementById('pinBtn').textContent = 'Open the Vault';
-      clearError('pinError');
-      startPinTimer();
-      setTimeout(() => document.getElementById('authPin').focus(), 100);
+    function showPasswordLoginStep() {
+      document.getElementById('authChoiceStep').style.display = 'none';
+      document.getElementById('authPasswordStep').style.display = 'block';
+      document.getElementById('authSignupStep').style.display = 'none';
+      clearError('passwordError');
+      setTimeout(() => document.getElementById('passwordEmail').focus(), 100);
+    }
+    function showSignupStep() {
+      document.getElementById('authChoiceStep').style.display = 'none';
+      document.getElementById('authPasswordStep').style.display = 'none';
+      document.getElementById('authSignupStep').style.display = 'block';
+      clearError('signupError');
+      setTimeout(() => document.getElementById('signupName').focus(), 100);
     }
 
-    // ── Request PIN ───────────────────────────────────────────────
-    async function requestPin() {
-      const email = document.getElementById('authEmail').value.trim();
-      const btn   = document.getElementById('emailBtn');
-      clearError('emailError');
+    // ── Password Login ─────────────────────────────────────────────
+    async function passwordLogin() {
+      const email = document.getElementById('passwordEmail').value.trim();
+      const password = document.getElementById('passwordPassword').value;
+      const btn = document.getElementById('passwordBtn');
+      clearError('passwordError');
 
       if (!email) {
-        showError('emailError', 'Please enter your email address.');
+        showError('passwordError', 'Email is required');
         return;
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showError('emailError', 'That doesn\'t look like a valid email.');
+        showError('passwordError', 'Please enter a valid email address');
+        return;
+      }
+      if (!password) {
+        showError('passwordError', 'Password is required');
         return;
       }
 
-      btn.disabled    = true;
-      btn.textContent = 'Sending…';
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
 
       try {
-        const res = await auth.requestPin(email);
+        const res = await auth.login(email, password);
         if (res.success) {
-          showPinStep();
-        } else {
-          showError('emailError', res.error || 'Failed to send pin. Please try again.');
-          btn.disabled    = false;
-          btn.textContent = 'Request Access Pin';
-        }
-      } catch (e) {
-        showError('emailError', 'Network error — please check your connection.');
-        btn.disabled    = false;
-        btn.textContent = 'Request Access Pin';
-      }
-    }
-
-    // ── Verify PIN ────────────────────────────────────────────────
-    async function verifyPin() {
-      const email  = document.getElementById('authEmail').value.trim();
-      const pin    = document.getElementById('authPin').value.trim();
-      const btn    = document.getElementById('pinBtn');
-      const input  = document.getElementById('authPin');
-      clearError('pinError');
-
-      if (!pin) {
-        showError('pinError', 'Please enter the 6-digit pin from your email.');
-        return;
-      }
-      if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
-        showError('pinError', 'Pin must be exactly 6 digits.');
-        input.classList.add('shake');
-        setTimeout(() => input.classList.remove('shake'), 500);
-        return;
-      }
-
-      btn.disabled    = true;
-      btn.textContent = 'Verifying…';
-
-      try {
-        const res = await auth.verifyPin(email, pin);
-        if (res.success) {
-          stopPinTimer();
           window.location.href = 'futurely-vault.html';
         } else {
-          const msg = res.error || 'Invalid or expired pin. Please try again.';
-          showError('pinError', msg);
-          input.value = '';
-          input.classList.add('shake');
-          setTimeout(() => input.classList.remove('shake'), 500);
-          btn.disabled    = false;
-          btn.textContent = 'Open the Vault';
-          setTimeout(() => input.focus(), 100);
+          showError('passwordError', res.error || 'Invalid email or password');
+          btn.disabled = false;
+          btn.textContent = 'Sign In';
         }
       } catch (e) {
-        showError('pinError', 'Network error — please check your connection.');
-        btn.disabled    = false;
-        btn.textContent = 'Open the Vault';
+        showError('passwordError', 'Network error — please check your connection.');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
       }
     }
 
-    // ── Resend PIN ────────────────────────────────────────────────
-    async function resendPin() {
-      const email      = document.getElementById('authEmail').value.trim();
-      const resendBtn  = document.getElementById('resendBtn');
-      clearError('pinError');
-      resendBtn.disabled    = true;
-      resendBtn.textContent = 'Sending…';
+    // ── Signup ────────────────────────────────────────────────────
+    async function signup() {
+      const name = document.getElementById('signupName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const confirmPassword = document.getElementById('signupConfirmPassword').value;
+      const btn = document.getElementById('signupBtn');
+      clearError('signupError');
 
-      try {
-        const res = await auth.requestPin(email);
-        if (res.success) {
-          showError('pinError', '✓ New pin sent to ' + email);
-          document.getElementById('pinError').style.color = 'var(--gold-dim)'; 
-          document.getElementById('pinBtn').disabled = false;
-          document.getElementById('pinBtn').textContent = 'Open the Vault';
-          setTimeout(() => {
-            const el = document.getElementById('pinError');
-            if (el && el.textContent.includes('✓')) {
-              clearError('pinError');
-            }
-          }, 4000);
-        } else {
-          showError('pinError', res.error || 'Failed to resend. Please try again.');
-        }
-      } catch(e) {
-        showError('pinError', 'Network error — please check your connection.');
+      // Validation
+      if (!email) {
+        showError('signupError', 'Email is required');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('signupError', 'Please enter a valid email address');
+        return;
+      }
+      if (!password) {
+        showError('signupError', 'Password is required');
+        return;
+      }
+      if (password.length < 6) {
+        showError('signupError', 'Password must be at least 6 characters');
+        return;
+      }
+      if (password !== confirmPassword) {
+        showError('signupError', 'Passwords do not match');
+        return;
       }
 
-      setTimeout(() => {
-        resendBtn.disabled    = false;
-        resendBtn.textContent = 'Resend Pin';
-      }, 10000);
+      btn.disabled = true;
+      btn.textContent = 'Creating Account…';
+
+      try {
+        const res = await auth.signup(email, password, name || undefined);
+        if (res.success) {
+          showError('signupError', '✓ Account created successfully! Redirecting...');
+          document.getElementById('signupError').style.color = 'var(--gold-dim)';
+          setTimeout(() => {
+            window.location.href = 'futurely-vault.html';
+          }, 1500);
+        } else {
+          showError('signupError', res.error || 'Signup failed. Please try again.');
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+        }
+      } catch (e) {
+        showError('signupError', 'Network error — please check your connection.');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
     }
 
     const cursor = document.getElementById('cursor');
