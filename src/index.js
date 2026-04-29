@@ -4,8 +4,6 @@
 //
 //  Routes:
 //    POST   /api/waitlist             → join waitlist
-//    POST   /api/auth/request         → request 6-digit pin
-//    POST   /api/auth/verify          → verify pin & get userId
 //    POST   /api/auth/signup          → create new account with password
 //    POST   /api/auth/login           → login with email & password
 //    POST   /api/letters              → create / save draft (Auth required)
@@ -107,8 +105,6 @@ export default {
     let response;
     try {
       if      (path === '/api/waitlist'     && method === 'POST')   response = await handleWaitlist(request, env);
-      else if (path === '/api/auth/request' && method === 'POST')   response = await handleAuthRequest(request, env);
-      else if (path === '/api/auth/verify'  && method === 'POST')   response = await handleAuthVerify(request, env);
       else if (path === '/api/auth/signup'  && method === 'POST')   response = await handleSignup(request, env);
       else if (path === '/api/auth/login'   && method === 'POST')   response = await handleLogin(request, env);
       
@@ -177,86 +173,6 @@ async function handleWaitlist(request, env) {
 
 // ─── Authentication ──────────────────────────────────────────
 
-async function handleAuthRequest(request, env) {
-  const body = await request.json().catch(() => null);
-  if (!body?.email) return error('Email is required');
-
-  const email = body.email.toLowerCase().trim();
-  const pin   = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit pin
-  const exp   = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 mins
-
-  // Store pin
-  await env.DB.prepare(`
-    INSERT INTO auth_codes (email, code, expires_at)
-    VALUES (?, ?, ?)
-    ON CONFLICT(email) DO UPDATE SET code = excluded.code, expires_at = excluded.expires_at
-  `).bind(email, pin, exp).run();
-
-  // Send Pin via Email
-  if (env.RESEND_API_KEY) {
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method:  'POST',
-        headers: {
-          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-          'Content-Type':  'application/json',
-        },
-        body: JSON.stringify({
-          from:    env.FROM_EMAIL || 'Futurely <auth@futurely.unbeated.com>',
-          to:      [email],
-          subject: `✦ Your Futurely access code: ${pin}`,
-          html:    `<div style="font-family:Georgia,serif; color:#0f172a; padding:20px; border-top:3px solid #3b82f6; background:#f8fafc;">
-                      <p>Your 6-digit access code for <strong>Futurely</strong> is:</p>
-                      <h1 style="letter-spacing:0.2em; color:#3b82f6;">${pin}</h1>
-                      <p style="font-size:0.9rem; color:#64748b;">It will expire in 10 minutes.</p>
-                    </div>`
-        }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('[Auth] Resend API Error:', res.status, errorText);
-      }
-    } catch (e) {
-      console.error('[Auth] Fetch to Resend failed:', e.message);
-    }
-  }
-
-  return ok({ message: "Access code sent to your email." });
-}
-
-async function handleAuthVerify(request, env) {
-  const body = await request.json().catch(() => null);
-  if (!body?.email || !body?.code) return error('Email and code are required');
-
-  const email = body.email.toLowerCase().trim();
-  const now   = new Date().toISOString();
-
-  const record = await env.DB.prepare(`
-    SELECT * FROM auth_codes WHERE email = ? AND code = ? AND expires_at > ?
-  `).bind(email, body.code, now).first();
-
-  if (!record) return error('Invalid or expired code', 401);
-
-  // Success: Clear code
-  await env.DB.prepare(`DELETE FROM auth_codes WHERE email = ?`).bind(email).run();
-
-  // Get or Create User
-  let user = await env.DB.prepare(`SELECT id, name FROM users WHERE email = ?`).bind(email).first();
-  if (!user) {
-    const newUserId = uuid();
-    await env.DB.prepare(`INSERT INTO users (id, email, email_verified) VALUES (?, ?, ?)`).bind(newUserId, email, 1).run();
-    user = { id: newUserId, name: null };
-  } else {
-    // Update email_verified to 1 if not already verified
-    await env.DB.prepare(`UPDATE users SET email_verified = 1 WHERE email = ?`).bind(email).run();
-  }
-
-  return ok({ userId: user.id, message: "Login successful", name: user.name });
-}
-
-// ─── New Signup & Login (Password-based) ─────────────────────
-
 async function handleSignup(request, env) {
   const body = await request.json().catch(() => null);
   if (!body?.email) return error('Email is required');
@@ -279,11 +195,11 @@ async function handleSignup(request, env) {
   const passwordHash = await hashPassword(password, salt);
   const userId = uuid();
   
-  // Create user with email_verified = 0 (will need verification)
+  // Create user
   await env.DB.prepare(`
     INSERT INTO users (id, email, name, password_hash, email_verified)
     VALUES (?, ?, ?, ?, ?)
-  `).bind(userId, email, name, `${salt}:${passwordHash}`, 0).run();
+  `).bind(userId, email, name, `${salt}:${passwordHash}`, 1).run();
   
   // Send welcome email
   if (env.RESEND_API_KEY) {
@@ -327,7 +243,7 @@ async function handleLogin(request, env) {
   
   // Get user with password hash
   const user = await env.DB.prepare(`
-    SELECT id, password_hash FROM users WHERE email = ?
+    SELECT id, name, password_hash FROM users WHERE email = ?
   `).bind(email).first();
   
   if (!user || !user.password_hash) {
@@ -556,7 +472,7 @@ async function sendViaEmail(letter, env) {
 }
 
 function buildEmailHTML(letter) {
-  return `<!DOCTYPE html>
+  return \`<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8"/>
@@ -585,19 +501,19 @@ function buildEmailHTML(letter) {
     <div class="gold-line"></div>
   </div>
   <div class="paper">
-    <div class="to-label">${letter.salutation || 'Dear future me,'}</div>
-    <div class="body">${escapeHtml(letter.body)}</div>
-    <div class="sig">${escapeHtml(letter.sign_off || '— Your past self')}</div>
+    <div class="to-label">\${letter.salutation || 'Dear future me,'}</div>
+    <div class="body">\${escapeHtml(letter.body)}</div>
+    <div class="sig">\${escapeHtml(letter.sign_off || '— Your past self')}</div>
   </div>
   <div class="footer">
     <div class="gold-line"></div>
     <p>Delivered by <a href="https://futurely.unbeated.com">Futurely</a>
-       &nbsp;·&nbsp; Written ${letter.created_at?.slice(0,10)}
+       &nbsp;·&nbsp; Written \${letter.created_at?.slice(0,10)}
        &nbsp;·&nbsp; Delivered today</p>
   </div>
 </div>
 </body>
-</html>`;
+</html>\`;
 }
 
 function escapeHtml(str = '') {
@@ -619,20 +535,20 @@ async function sendViaTelegram(letter, env) {
   if (body.length > MAX) body = body.slice(0, MAX) + '…';
 
   const message = [
-    `✦ *Futurely* — A letter from your past has arrived`,
-    ``,
-    `_${letter.salutation || 'Dear future me,'}_`,
-    ``,
+    \`✦ *Futurely* — A letter from your past has arrived\`,
+    \`\`,
+    \`_\${letter.salutation || 'Dear future me,'}_\`,
+    \`\`,
     body,
-    ``,
-    `_${letter.sign_off || '— Your past self'}_`,
-    ``,
-    `*Written:* ${letter.created_at?.slice(0,10)}`,
-    `[futurely\\.unbeated\\.com](https://futurely.unbeated.com)`,
+    \`\`,
+    \`_\${letter.sign_off || '— Your past self'}_\`,
+    \`\`,
+    \`*Written:* \${letter.created_at?.slice(0,10)}\`,
+    \`[futurely\\\\.unbeated\\\\.com](https://futurely.unbeated.com)\`,
   ].join('\\n');
 
   const res = await fetch(
-    `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+    \`https://api.telegram.org/bot\${env.TELEGRAM_BOT_TOKEN}/sendMessage\`,
     {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -645,5 +561,5 @@ async function sendViaTelegram(letter, env) {
   );
 
   const data = await res.json();
-  if (!data.ok) throw new Error(`Telegram error: ${data.description}`);
+  if (!data.ok) throw new Error(\`Telegram error: \${data.description}\`);
 }

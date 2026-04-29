@@ -741,16 +741,29 @@
 
   <!-- AUTH OVERLAY -->
   <div class="auth-overlay" id="authOverlay">
-    <div class="auth-card" id="authEmailStep">
+    <div class="auth-card" id="authPasswordStep">
       <p class="sidebar-section-title">Sign in to craft your letter</p>
-      <input type="email" class="auth-input" id="authEmail" placeholder="your@email.com">
-      <button class="btn-auth" onclick="requestPin()">Send Access Code</button>
-    </div>
-    <div class="auth-card" id="authPinStep" style="display:none;">
-      <p class="sidebar-section-title">Enter the 6-digit code</p>
-      <input type="text" class="auth-input" id="authPin" placeholder="123456" maxlength="6">
-      <button class="btn-auth" onclick="verifyPin()">Verify & Login</button>
-      <p class="nav-step" style="margin-top:1.5rem; cursor:pointer;" onclick="showEmailStep()">← Back</p>
+      <input
+        type="email"
+        class="auth-input"
+        id="passwordEmail"
+        placeholder="your@email.com"
+        autocomplete="email"
+        style="margin-bottom:1rem;"
+        onkeydown="if(event.key==='Enter') passwordLogin()"
+      >
+      <input
+        type="password"
+        class="auth-input"
+        id="passwordPassword"
+        placeholder="Your password"
+        autocomplete="current-password"
+        style="margin-bottom:1.5rem;"
+        onkeydown="if(event.key==='Enter') passwordLogin()"
+      >
+      <div class="auth-error" id="passwordError"></div>
+      <button class="btn-auth" id="passwordBtn" onclick="passwordLogin()">Sign In</button>
+      <p class="nav-step" style="margin-top:1.5rem; cursor:pointer;" onclick="window.location.href='index.html'">← Back to Home</p>
     </div>
   </div>
 
@@ -830,32 +843,58 @@
       }
     }
 
-    async function requestPin() {
-      const email = document.getElementById('authEmail').value.trim();
-      if (!email) return;
-      const res = await auth.requestPin(email);
-      if (res.success) {
-        document.getElementById('authEmailStep').style.display = 'none';
-        document.getElementById('authPinStep').style.display = 'block';
-      } else {
-        alert(res.error || 'Failed to send code');
-      }
+    // ── Error helpers ─────────────────────────────────────────────
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      el.style.color = ''; // Reset to default (red)
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+    function clearError(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.color = '';
+      el.textContent = '';
+      el.classList.remove('visible');
     }
 
-    async function verifyPin() {
-      const email = document.getElementById('authEmail').value.trim();
-      const pin = document.getElementById('authPin').value.trim();
-      const res = await auth.verifyPin(email, pin);
-      if (res.success) {
-        checkLogin();
-      } else {
-        alert(res.error || 'Invalid code');
-      }
-    }
+    // ── Password Login ─────────────────────────────────────────────
+    async function passwordLogin() {
+      const email = document.getElementById('passwordEmail').value.trim();
+      const password = document.getElementById('passwordPassword').value;
+      const btn = document.getElementById('passwordBtn');
+      clearError('passwordError');
 
-    function showEmailStep() {
-      document.getElementById('authEmailStep').style.display = 'block';
-      document.getElementById('authPinStep').style.display = 'none';
+      if (!email) {
+        showError('passwordError', 'Email is required');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('passwordError', 'Please enter a valid email address');
+        return;
+      }
+      if (!password) {
+        showError('passwordError', 'Password is required');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+
+      try {
+        const res = await auth.login(email, password);
+        if (res.success) {
+          checkLogin();
+        } else {
+          showError('passwordError', res.error || 'Invalid email or password');
+          btn.disabled = false;
+          btn.textContent = 'Sign In';
+        }
+      } catch (e) {
+        showError('passwordError', 'Network error — please check your connection.');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
     }
 
     // --- Original UI Scripts ---

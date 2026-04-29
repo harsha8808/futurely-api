@@ -28,42 +28,6 @@ const Auth = {
   },
 
   // --- API Methods ---
-  async requestPin(email) {
-    console.log(`[Auth] Requesting PIN for: ${email}`);
-    try {
-      const res = await fetch(`${API_BASE}/auth/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      console.log(`[Auth] PIN request status: ${res.status}`);
-      return res.json();
-    } catch (err) {
-      console.error('[Auth] PIN request failed:', err);
-      throw err;
-    }
-  },
-
-  async verifyPin(email, code) {
-    console.log(`[Auth] Verifying PIN for: ${email}`);
-    try {
-      const res = await fetch(`${API_BASE}/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code })
-      });
-      console.log(`[Auth] PIN verify status: ${res.status}`);
-      const data = await res.json();
-      if (data.success && data.userId) {
-        this.setUserId(data.userId);
-      }
-      return data;
-    } catch (err) {
-      console.error('[Auth] PIN verify failed:', err);
-      throw err;
-    }
-  },
-
   async signup(email, password, name) {
     console.log(`[Auth] Signing up: ${email}`);
     try {
