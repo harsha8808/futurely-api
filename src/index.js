@@ -472,7 +472,7 @@ async function sendViaEmail(letter, env) {
 }
 
 function buildEmailHTML(letter) {
-  return \`<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8"/>
@@ -501,19 +501,19 @@ function buildEmailHTML(letter) {
     <div class="gold-line"></div>
   </div>
   <div class="paper">
-    <div class="to-label">\${letter.salutation || 'Dear future me,'}</div>
-    <div class="body">\${escapeHtml(letter.body)}</div>
-    <div class="sig">\${escapeHtml(letter.sign_off || '— Your past self')}</div>
+    <div class="to-label">${letter.salutation || 'Dear future me,'}</div>
+    <div class="body">${escapeHtml(letter.body)}</div>
+    <div class="sig">${escapeHtml(letter.sign_off || '— Your past self')}</div>
   </div>
   <div class="footer">
     <div class="gold-line"></div>
     <p>Delivered by <a href="https://futurely.unbeated.com">Futurely</a>
-       &nbsp;·&nbsp; Written \${letter.created_at?.slice(0,10)}
+       &nbsp;·&nbsp; Written ${letter.created_at?.slice(0,10)}
        &nbsp;·&nbsp; Delivered today</p>
   </div>
 </div>
 </body>
-</html>\`;
+</html>`;
 }
 
 function escapeHtml(str = '') {
@@ -535,20 +535,20 @@ async function sendViaTelegram(letter, env) {
   if (body.length > MAX) body = body.slice(0, MAX) + '…';
 
   const message = [
-    \`✦ *Futurely* — A letter from your past has arrived\`,
-    \`\`,
-    \`_\${letter.salutation || 'Dear future me,'}_\`,
-    \`\`,
+    `✦ *Futurely* — A letter from your past has arrived`,
+    ``,
+    `_${letter.salutation || 'Dear future me,'}_`,
+    ``,
     body,
-    \`\`,
-    \`_\${letter.sign_off || '— Your past self'}_\`,
-    \`\`,
-    \`*Written:* \${letter.created_at?.slice(0,10)}\`,
-    \`[futurely\\\\.unbeated\\\\.com](https://futurely.unbeated.com)\`,
+    ``,
+    `_${letter.sign_off || '— Your past self'}_`,
+    ``,
+    `*Written:* ${letter.created_at?.slice(0,10)}`,
+    `[futurely\\.unbeated\\.com](https://futurely.unbeated.com)`,
   ].join('\\n');
 
   const res = await fetch(
-    \`https://api.telegram.org/bot\${env.TELEGRAM_BOT_TOKEN}/sendMessage\`,
+    `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
     {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -561,5 +561,5 @@ async function sendViaTelegram(letter, env) {
   );
 
   const data = await res.json();
-  if (!data.ok) throw new Error(\`Telegram error: \${data.description}\`);
+  if (!data.ok) throw new Error(`Telegram error: ${data.description}`);
 }
