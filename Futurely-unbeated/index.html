@@ -540,45 +540,7 @@
     }
     .auth-error.visible { opacity: 1; }
 
-    /* PIN countdown timer */
-    .auth-timer {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.58rem;
-      letter-spacing: 0.1em;
-      color: var(--gold-dim);
-      margin-bottom: 1.2rem;
-      text-align: center;
-    }
-    .auth-timer span { color: var(--gold-bright); }
 
-    /* Resend link */
-    .auth-resend {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.58rem;
-      letter-spacing: 0.1em;
-      color: var(--navy-muted);
-      text-align: center;
-      margin-top: 1rem;
-      cursor: none;
-    }
-    .auth-resend button {
-      background: none; border: none; padding: 0;
-      color: var(--gold-dim); text-decoration: underline;
-      font-family: inherit; font-size: inherit;
-      letter-spacing: inherit; cursor: none;
-      transition: color 0.2s;
-    }
-    .auth-resend button:hover { color: var(--gold-bright); }
-
-    /* Shake animation for wrong PIN */
-    @keyframes shake {
-      0%,100% { transform: translateX(0); }
-      20%      { transform: translateX(-8px); }
-      40%      { transform: translateX(8px); }
-      60%      { transform: translateX(-5px); }
-      80%      { transform: translateX(5px); }
-    }
-    .shake { animation: shake 0.4s ease; }
   </style>
 </head>
 <body>
@@ -845,8 +807,6 @@
     function closeAuth() {
       document.getElementById('authOverlay').classList.remove('active');
       clearError('emailError');
-      clearError('pinError');
-      stopPinTimer();
     }
 
     // ── Error helpers ─────────────────────────────────────────────
