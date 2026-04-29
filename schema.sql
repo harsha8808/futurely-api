@@ -5,11 +5,13 @@
 
 -- Users
 CREATE TABLE IF NOT EXISTS users (
-  id         TEXT PRIMARY KEY,
-  email      TEXT UNIQUE NOT NULL,
-  name       TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  plan       TEXT NOT NULL DEFAULT 'free'   -- free | plus | vault
+  id            TEXT PRIMARY KEY,
+  email         TEXT UNIQUE NOT NULL,
+  name          TEXT,
+  password_hash TEXT,        -- bcrypt hash for password-based login
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  plan          TEXT NOT NULL DEFAULT 'free',   -- free | plus | vault
+  email_verified INTEGER NOT NULL DEFAULT 0     -- 0 = not verified, 1 = verified
 );
 
 -- Letters
@@ -59,6 +61,22 @@ CREATE TABLE IF NOT EXISTS auth_codes (
   expires_at TEXT NOT NULL
 );
 
+-- Email Verification Tokens
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  token      TEXT PRIMARY KEY,
+  email      TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Password Reset Tokens
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  token      TEXT PRIMARY KEY,
+  email      TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Delivery log
 CREATE TABLE IF NOT EXISTS delivery_log (
   id           TEXT PRIMARY KEY,
@@ -76,3 +94,6 @@ CREATE INDEX IF NOT EXISTS idx_letters_status  ON letters(status);
 CREATE INDEX IF NOT EXISTS idx_letters_deliver ON letters(deliver_on);
 CREATE INDEX IF NOT EXISTS idx_letters_due     ON letters(status, deliver_on) WHERE status = 'sealed';
 CREATE INDEX IF NOT EXISTS idx_auth_expiry     ON auth_codes(expires_at);
+CREATE INDEX IF NOT EXISTS idx_email_verification_expiry ON email_verification_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_password_reset_expiry ON password_reset_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_users_email_verified ON users(email) WHERE email_verified = 1;
