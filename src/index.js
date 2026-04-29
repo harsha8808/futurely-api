@@ -6,6 +6,8 @@
 //    POST   /api/waitlist             → join waitlist
 //    POST   /api/auth/request         → request 6-digit pin
 //    POST   /api/auth/verify          → verify pin & get userId
+//    POST   /api/auth/signup          → create new account with password
+//    POST   /api/auth/login           → login with email & password
 //    POST   /api/letters              → create / save draft (Auth required)
 //    GET    /api/letters              → list user's letters (Auth required)
 //    GET    /api/letters/:id          → get single letter (Auth required)
@@ -31,6 +33,19 @@ const json = (data, status = 200) =>
 
 const error = (msg, status = 400) => json({ success: false, error: msg }, status);
 const ok    = (data)              => json({ success: true, ...data });
+
+// Password helpers (simple SHA-256 with salt for demo)
+async function hashPassword(password, salt) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function generateSalt() {
+  return crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+}
 
 function getCorsHeaders(request, env) {
   const origin = request.headers.get('Origin');
@@ -94,6 +109,8 @@ export default {
       if      (path === '/api/waitlist'     && method === 'POST')   response = await handleWaitlist(request, env);
       else if (path === '/api/auth/request' && method === 'POST')   response = await handleAuthRequest(request, env);
       else if (path === '/api/auth/verify'  && method === 'POST')   response = await handleAuthVerify(request, env);
+      else if (path === '/api/auth/signup'  && method === 'POST')   response = await handleSignup(request, env);
+      else if (path === '/api/auth/login'   && method === 'POST')   response = await handleLogin(request, env);
       
       // Protected Routes
       else if (path === '/api/letters' && method === 'POST') {
@@ -225,14 +242,111 @@ async function handleAuthVerify(request, env) {
   await env.DB.prepare(`DELETE FROM auth_codes WHERE email = ?`).bind(email).run();
 
   // Get or Create User
-  let user = await env.DB.prepare(`SELECT id FROM users WHERE email = ?`).bind(email).first();
+  let user = await env.DB.prepare(`SELECT id, name FROM users WHERE email = ?`).bind(email).first();
   if (!user) {
     const newUserId = uuid();
-    await env.DB.prepare(`INSERT INTO users (id, email) VALUES (?, ?)`).bind(newUserId, email).run();
-    user = { id: newUserId };
+    await env.DB.prepare(`INSERT INTO users (id, email, email_verified) VALUES (?, ?, ?)`).bind(newUserId, email, 1).run();
+    user = { id: newUserId, name: null };
+  } else {
+    // Update email_verified to 1 if not already verified
+    await env.DB.prepare(`UPDATE users SET email_verified = 1 WHERE email = ?`).bind(email).run();
   }
 
-  return ok({ userId: user.id, message: "Login successful" });
+  return ok({ userId: user.id, message: "Login successful", name: user.name });
+}
+
+// ─── New Signup & Login (Password-based) ─────────────────────
+
+async function handleSignup(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body?.email) return error('Email is required');
+  if (!body?.password) return error('Password is required');
+  
+  const email = body.email.toLowerCase().trim();
+  const name = body.name || null;
+  const password = body.password;
+  
+  // Validate email format
+  const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRx.test(email)) return error('Invalid email');
+  
+  // Check if user already exists
+  const existing = await env.DB.prepare(`SELECT id FROM users WHERE email = ?`).bind(email).first();
+  if (existing) return error('User already exists. Please login instead.');
+  
+  // Hash password with salt
+  const salt = generateSalt();
+  const passwordHash = await hashPassword(password, salt);
+  const userId = uuid();
+  
+  // Create user with email_verified = 0 (will need verification)
+  await env.DB.prepare(`
+    INSERT INTO users (id, email, name, password_hash, email_verified)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(userId, email, name, `${salt}:${passwordHash}`, 0).run();
+  
+  // Send welcome email
+  if (env.RESEND_API_KEY) {
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: env.FROM_EMAIL || 'Futurely <welcome@futurely.unbeated.com>',
+          to: [email],
+          subject: `✨ Welcome to Futurely!`,
+          html: `<div style="font-family:Georgia,serif; color:#0f172a; padding:20px; border-top:3px solid #3b82f6; background:#f8fafc;">
+                  <h2>Welcome to Futurely, ${name || 'friend'}!</h2>
+                  <p>Your account has been created successfully.</p>
+                  <p>You can now start writing letters to your future self or loved ones.</p>
+                  <p style="margin-top:2rem; font-size:0.9rem; color:#64748b;">If you didn't create this account, please ignore this email.</p>
+                </div>`
+        }),
+      });
+    } catch (e) {
+      console.error('[Signup] Welcome email failed:', e.message);
+    }
+  }
+  
+  return ok({
+    userId,
+    message: "Account created successfully. Welcome to Futurely!",
+    emailSent: true
+  });
+}
+
+async function handleLogin(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body?.email || !body?.password) return error('Email and password are required');
+  
+  const email = body.email.toLowerCase().trim();
+  const password = body.password;
+  
+  // Get user with password hash
+  const user = await env.DB.prepare(`
+    SELECT id, password_hash FROM users WHERE email = ?
+  `).bind(email).first();
+  
+  if (!user || !user.password_hash) {
+    return error('Invalid email or password', 401);
+  }
+  
+  // Verify password
+  const [salt, storedHash] = user.password_hash.split(':');
+  const computedHash = await hashPassword(password, salt);
+  
+  if (computedHash !== storedHash) {
+    return error('Invalid email or password', 401);
+  }
+  
+  return ok({
+    userId: user.id,
+    message: "Login successful",
+    name: user.name
+  });
 }
 
 // ─── Letters ─────────────────────────────────────────────────
