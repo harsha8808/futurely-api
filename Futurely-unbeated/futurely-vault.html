@@ -581,16 +581,13 @@
 
   <!-- AUTH OVERLAY -->
   <div class="auth-overlay" id="authOverlay">
-    <div class="auth-card" id="authEmailStep">
+    <!-- Password Login -->
+    <div class="auth-card" id="authPasswordStep">
       <p class="sidebar-section-title">Sign in to open your vault</p>
-      <input type="email" class="auth-input" id="authEmail" placeholder="your@email.com">
-      <button class="btn-auth" onclick="requestPin()">Send Access Code</button>
-    </div>
-    <div class="auth-card" id="authPinStep" style="display:none;">
-      <p class="sidebar-section-title">Enter the 6-digit code</p>
-      <input type="text" class="auth-input" id="authPin" placeholder="123456" maxlength="6">
-      <button class="btn-auth" onclick="verifyPin()">Verify & Login</button>
-      <p class="nav-step" style="margin-top:1.5rem; cursor:pointer;" onclick="showEmailStep()">← Back</p>
+      <input type="email" class="auth-input" id="passwordEmail" placeholder="your@email.com" style="margin-bottom:1rem;">
+      <input type="password" class="auth-input" id="passwordPassword" placeholder="Your password" style="margin-bottom:1.5rem;">
+      <button class="btn-auth" onclick="passwordLogin()">Sign In</button>
+      <p class="nav-step" style="margin-top:1.5rem; cursor:pointer;" onclick="window.location.href='index.html'">← Back to Home</p>
     </div>
   </div>
 
@@ -609,32 +606,21 @@
       }
     }
 
-    async function requestPin() {
-      const email = document.getElementById('authEmail').value.trim();
-      if (!email) return;
-      const res = await auth.requestPin(email);
-      if (res.success) {
-        document.getElementById('authEmailStep').style.display = 'none';
-        document.getElementById('authPinStep').style.display = 'block';
-      } else {
-        alert(res.error || 'Failed to send code');
+    async function passwordLogin() {
+      const email = document.getElementById('passwordEmail').value.trim();
+      const password = document.getElementById('passwordPassword').value;
+      
+      if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
       }
-    }
 
-    async function verifyPin() {
-      const email = document.getElementById('authEmail').value.trim();
-      const pin = document.getElementById('authPin').value.trim();
-      const res = await auth.verifyPin(email, pin);
+      const res = await auth.login(email, password);
       if (res.success) {
         checkLogin();
       } else {
-        alert(res.error || 'Invalid code');
+        alert(res.error || 'Invalid email or password');
       }
-    }
-
-    function showEmailStep() {
-      document.getElementById('authEmailStep').style.display = 'block';
-      document.getElementById('authPinStep').style.display = 'none';
     }
 
     /* ── Data Logic ── */
