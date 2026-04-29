@@ -735,7 +735,51 @@
       >
       <div class="auth-error" id="passwordError"></div>
       <button class="btn-auth" id="passwordBtn" onclick="passwordLogin()">Sign In</button>
+      <p class="hero-note" style="margin-top:1rem; cursor:pointer; font-size:0.55rem;" onclick="showForgotStep()">Forgot Password?</p>
       <p class="hero-note" style="margin-top:1rem; cursor:pointer;" onclick="showChoiceStep()">← Back</p>
+    </div>
+
+    <!-- STEP 4: Forgot Password -->
+    <div class="auth-card" id="authForgotStep" style="display:none;">
+      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">
+        Reset your password
+      </p>
+      <p class="hero-note" style="margin-bottom:1.5rem; font-size:0.7rem; color:var(--navy-muted);">
+        Enter your email and we'll send you a link to reset your password.
+      </p>
+      <input
+        type="email"
+        class="auth-input"
+        id="forgotEmail"
+        placeholder="your@email.com"
+        style="margin-bottom:1.5rem;"
+      >
+      <div class="auth-error" id="forgotError"></div>
+      <button class="btn-auth" id="forgotBtn" onclick="requestReset()">Send Reset Link</button>
+      <p class="hero-note" style="margin-top:1rem; cursor:pointer;" onclick="showPasswordLoginStep()">← Back to Login</p>
+    </div>
+
+    <!-- STEP 5: Reset Password (Confirm) -->
+    <div class="auth-card" id="authResetStep" style="display:none;">
+      <p class="sidebar-section-title" style="margin-bottom:1.5rem; color:var(--gold-bright); font-family:'DM Mono'; font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase;">
+        Set New Password
+      </p>
+      <input
+        type="password"
+        class="auth-input"
+        id="resetPassword"
+        placeholder="New password"
+        style="margin-bottom:1rem;"
+      >
+      <input
+        type="password"
+        class="auth-input"
+        id="resetConfirmPassword"
+        placeholder="Confirm new password"
+        style="margin-bottom:1.5rem;"
+      >
+      <div class="auth-error" id="resetError"></div>
+      <button class="btn-auth" id="resetBtn" onclick="confirmReset()">Update Password</button>
     </div>
 
     <!-- STEP 3: Signup Form -->
@@ -799,6 +843,16 @@
     }
     updateUI();
 
+    // Check for reset token in URL
+    window.onload = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const resetToken = urlParams.get('reset_token');
+      if (resetToken) {
+        openAuth();
+        showResetStep(resetToken);
+      }
+    };
+
     // --- Auth Logic ---
     function openAuth() {
       document.getElementById('authOverlay').classList.add('active');
@@ -830,6 +884,8 @@
       document.getElementById('authChoiceStep').style.display = 'block';
       document.getElementById('authPasswordStep').style.display = 'none';
       document.getElementById('authSignupStep').style.display = 'none';
+      document.getElementById('authForgotStep').style.display = 'none';
+      document.getElementById('authResetStep').style.display = 'none';
       clearError('passwordError');
       clearError('signupError');
     }
@@ -837,6 +893,8 @@
       document.getElementById('authChoiceStep').style.display = 'none';
       document.getElementById('authPasswordStep').style.display = 'block';
       document.getElementById('authSignupStep').style.display = 'none';
+      document.getElementById('authForgotStep').style.display = 'none';
+      document.getElementById('authResetStep').style.display = 'none';
       clearError('passwordError');
       setTimeout(() => document.getElementById('passwordEmail').focus(), 100);
     }
@@ -844,8 +902,30 @@
       document.getElementById('authChoiceStep').style.display = 'none';
       document.getElementById('authPasswordStep').style.display = 'none';
       document.getElementById('authSignupStep').style.display = 'block';
+      document.getElementById('authForgotStep').style.display = 'none';
+      document.getElementById('authResetStep').style.display = 'none';
       clearError('signupError');
       setTimeout(() => document.getElementById('signupName').focus(), 100);
+    }
+    function showForgotStep() {
+      document.getElementById('authChoiceStep').style.display = 'none';
+      document.getElementById('authPasswordStep').style.display = 'none';
+      document.getElementById('authSignupStep').style.display = 'none';
+      document.getElementById('authForgotStep').style.display = 'block';
+      document.getElementById('authResetStep').style.display = 'none';
+      clearError('forgotError');
+      setTimeout(() => document.getElementById('forgotEmail').focus(), 100);
+    }
+    let currentResetToken = null;
+    function showResetStep(token) {
+      currentResetToken = token;
+      document.getElementById('authChoiceStep').style.display = 'none';
+      document.getElementById('authPasswordStep').style.display = 'none';
+      document.getElementById('authSignupStep').style.display = 'none';
+      document.getElementById('authForgotStep').style.display = 'none';
+      document.getElementById('authResetStep').style.display = 'block';
+      clearError('resetError');
+      setTimeout(() => document.getElementById('resetPassword').focus(), 100);
     }
 
     // ── Password Login ─────────────────────────────────────────────
@@ -938,6 +1018,77 @@
         showError('signupError', 'Network error — please check your connection.');
         btn.disabled = false;
         btn.textContent = 'Create Account';
+      }
+    }
+
+    // ── Forgot Password ───────────────────────────────────────────
+    async function requestReset() {
+      const email = document.getElementById('forgotEmail').value.trim();
+      const btn = document.getElementById('forgotBtn');
+      clearError('forgotError');
+
+      if (!email) {
+        showError('forgotError', 'Email is required');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+
+      try {
+        const res = await auth.requestPasswordReset(email);
+        if (res.success) {
+          showError('forgotError', '✓ If an account exists, a link has been sent.');
+          document.getElementById('forgotError').style.color = 'var(--gold-dim)';
+          btn.style.display = 'none';
+        } else {
+          showError('forgotError', res.error || 'Failed to send reset link.');
+          btn.disabled = false;
+          btn.textContent = 'Send Reset Link';
+        }
+      } catch (e) {
+        showError('forgotError', 'Network error.');
+        btn.disabled = false;
+        btn.textContent = 'Send Reset Link';
+      }
+    }
+
+    // ── Confirm Reset ─────────────────────────────────────────────
+    async function confirmReset() {
+      const password = document.getElementById('resetPassword').value;
+      const confirm = document.getElementById('resetConfirmPassword').value;
+      const btn = document.getElementById('resetBtn');
+      clearError('resetError');
+
+      if (!password || password.length < 6) {
+        showError('resetError', 'Password must be at least 6 characters');
+        return;
+      }
+      if (password !== confirm) {
+        showError('resetError', 'Passwords do not match');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Updating…';
+
+      try {
+        const res = await auth.confirmPasswordReset(currentResetToken, password);
+        if (res.success) {
+          showError('resetError', '✓ Password updated! Redirecting to login...');
+          document.getElementById('resetError').style.color = 'var(--gold-dim)';
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 2000);
+        } else {
+          showError('resetError', res.error || 'Failed to update password.');
+          btn.disabled = false;
+          btn.textContent = 'Update Password';
+        }
+      } catch (e) {
+        showError('resetError', 'Network error.');
+        btn.disabled = false;
+        btn.textContent = 'Update Password';
       }
     }
 

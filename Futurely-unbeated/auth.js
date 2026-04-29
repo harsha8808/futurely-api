@@ -68,6 +68,36 @@ const Auth = {
     }
   },
 
+  async requestPasswordReset(email) {
+    console.log(`[Auth] Requesting reset for: ${email}`);
+    try {
+      const res = await fetch(`${API_BASE}/auth/reset-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      return res.json();
+    } catch (err) {
+      console.error('[Auth] Reset request failed:', err);
+      throw err;
+    }
+  },
+
+  async confirmPasswordReset(token, password) {
+    console.log(`[Auth] Confirming reset with token`);
+    try {
+      const res = await fetch(`${API_BASE}/auth/reset-confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password })
+      });
+      return res.json();
+    } catch (err) {
+      console.error('[Auth] Reset confirmation failed:', err);
+      throw err;
+    }
+  },
+
   async logout() {
     this.setUserId(null);
     window.location.href = 'index.html';

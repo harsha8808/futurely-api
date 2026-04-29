@@ -4,8 +4,9 @@
 //
 //  Routes:
 //    POST   /api/waitlist             → join waitlist
-//    POST   /api/auth/signup          → create new account with password
 //    POST   /api/auth/login           → login with email & password
+//    POST   /api/auth/reset-request   → request password reset email
+//    POST   /api/auth/reset-confirm   → confirm password reset with token
 //    POST   /api/letters              → create / save draft (Auth required)
 //    GET    /api/letters              → list user's letters (Auth required)
 //    GET    /api/letters/:id          → get single letter (Auth required)
@@ -107,6 +108,8 @@ export default {
       if      (path === '/api/waitlist'     && method === 'POST')   response = await handleWaitlist(request, env);
       else if (path === '/api/auth/signup'  && method === 'POST')   response = await handleSignup(request, env);
       else if (path === '/api/auth/login'   && method === 'POST')   response = await handleLogin(request, env);
+      else if (path === '/api/auth/reset-request' && method === 'POST') response = await handleResetRequest(request, env);
+      else if (path === '/api/auth/reset-confirm' && method === 'POST') response = await handleResetConfirm(request, env);
       
       // Protected Routes
       else if (path === '/api/letters' && method === 'POST') {
@@ -263,6 +266,81 @@ async function handleLogin(request, env) {
     message: "Login successful",
     name: user.name
   });
+}
+
+async function handleResetRequest(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body?.email) return error('Email is required');
+
+  const email = body.email.toLowerCase().trim();
+  const user = await env.DB.prepare(`SELECT id FROM users WHERE email = ?`).bind(email).first();
+  
+  if (!user) {
+    // Return OK even if user not found to prevent email enumeration
+    return ok({ message: "If an account exists with this email, a reset link has been sent." });
+  }
+
+  const token = crypto.randomUUID();
+  const exp = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+
+  await env.DB.prepare(`
+    INSERT INTO password_reset_tokens (token, email, expires_at)
+    VALUES (?, ?, ?)
+    ON CONFLICT(token) DO UPDATE SET email = excluded.email, expires_at = excluded.expires_at
+  `).bind(token, email, exp).run();
+
+  if (env.RESEND_API_KEY) {
+    try {
+      const resetLink = `https://futurely.unbeated.com/?reset_token=${token}`;
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: env.FROM_EMAIL || 'Futurely <auth@futurely.unbeated.com>',
+          to: [email],
+          subject: `✦ Reset your Futurely password`,
+          html: `<div style="font-family:Georgia,serif; color:#0f172a; padding:20px; border-top:3px solid #3b82f6; background:#f8fafc;">
+                  <h2>Password Reset Request</h2>
+                  <p>You requested a password reset for your Futurely account.</p>
+                  <p>Click the link below to set a new password. This link will expire in 1 hour.</p>
+                  <a href="${resetLink}" style="display:inline-block; padding:12px 24px; background:#3b82f6; color:white; text-decoration:none; margin:20px 0;">Reset Password</a>
+                  <p style="font-size:0.8rem; color:#64748b;">If you didn't request this, you can safely ignore this email.</p>
+                </div>`
+        }),
+      });
+    } catch (e) {
+      console.error('[Auth] Reset email failed:', e.message);
+    }
+  }
+
+  return ok({ message: "If an account exists with this email, a reset link has been sent." });
+}
+
+async function handleResetConfirm(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body?.token || !body?.password) return error('Token and password are required');
+
+  const now = new Date().toISOString();
+  const record = await env.DB.prepare(`
+    SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > ?
+  `).bind(body.token, now).first();
+
+  if (!record) return error('Invalid or expired reset token', 401);
+
+  // Hash new password
+  const salt = generateSalt();
+  const passwordHash = await hashPassword(body.password, salt);
+
+  // Update user and delete token
+  await env.DB.prepare(`UPDATE users SET password_hash = ? WHERE email = ?`)
+    .bind(`${salt}:${passwordHash}`, record.email).run();
+  
+  await env.DB.prepare(`DELETE FROM password_reset_tokens WHERE token = ?`).bind(body.token).run();
+
+  return ok({ message: "Password reset successfully. You can now log in." });
 }
 
 // ─── Letters ─────────────────────────────────────────────────
