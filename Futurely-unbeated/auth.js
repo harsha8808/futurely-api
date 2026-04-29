@@ -64,6 +64,46 @@ const Auth = {
     }
   },
 
+  async signup(email, password, name) {
+    console.log(`[Auth] Signing up: ${email}`);
+    try {
+      const res = await fetch(`${API_BASE}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name })
+      });
+      console.log(`[Auth] Signup status: ${res.status}`);
+      const data = await res.json();
+      if (data.success && data.userId) {
+        this.setUserId(data.userId);
+      }
+      return data;
+    } catch (err) {
+      console.error('[Auth] Signup failed:', err);
+      throw err;
+    }
+  },
+
+  async login(email, password) {
+    console.log(`[Auth] Logging in: ${email}`);
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      console.log(`[Auth] Login status: ${res.status}`);
+      const data = await res.json();
+      if (data.success && data.userId) {
+        this.setUserId(data.userId);
+      }
+      return data;
+    } catch (err) {
+      console.error('[Auth] Login failed:', err);
+      throw err;
+    }
+  },
+
   async logout() {
     this.setUserId(null);
     window.location.href = 'index.html';
