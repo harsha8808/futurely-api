@@ -4,7 +4,7 @@ node_modules/
 dist/
 .env
 secret.txt
-wrangler.toml
+
 **/node_modules/
 **/dist/
 
